@@ -1,0 +1,6 @@
+[submodule "pharos-ai-backend"]
+	path = pharos-ai-backend
+	url = https://github.com/Juliusolsson05/pharos-ai-backend.git
+[submodule "pharos-ai-frontend"]
+	path = pharos-ai-frontend
+	url = https://github.com/Juliusolsson05/pharos-ai.git

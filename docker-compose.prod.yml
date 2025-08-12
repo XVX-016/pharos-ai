@@ -1,0 +1,225 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: pharos-db-prod
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - pharos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Message Broker
+  redis:
+    image: redis:7-alpine
+    container_name: pharos-redis-prod
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD}
+    networks:
+      - pharos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django Backend with Gunicorn
+  backend:
+    build:
+      context: ./pharos-ai-backend
+      dockerfile: Dockerfile
+    container_name: pharos-backend-prod
+    volumes:
+      - backend_static:/app/staticfiles
+      - backend_media:/app/media
+      - ./logs/backend:/app/logs
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - SECURE_SSL_REDIRECT=${SECURE_SSL_REDIRECT:-False}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-False}
+      - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE:-False}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+      python manage.py collectstatic --noinput &&
+      python manage.py migrate &&
+      gunicorn pharos_backend.wsgi:application
+        --bind 0.0.0.0:8000
+        --workers 4
+        --threads 2
+        --worker-class gthread
+        --worker-tmp-dir /dev/shm
+        --access-logfile /app/logs/access.log
+        --error-logfile /app/logs/error.log
+        --log-level info
+      "
+    networks:
+      - pharos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Celery Worker
+  celery-worker:
+    build:
+      context: ./pharos-ai-backend
+      dockerfile: Dockerfile
+    container_name: pharos-celery-worker-prod
+    volumes:
+      - ./logs/celery:/app/logs
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - backend
+      - redis
+      - db
+    command: celery -A pharos_backend worker --loglevel=info --concurrency=4 --max-tasks-per-child=1000
+    networks:
+      - pharos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A pharos_backend inspect ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Celery Beat Scheduler
+  celery-beat:
+    build:
+      context: ./pharos-ai-backend
+      dockerfile: Dockerfile
+    container_name: pharos-celery-beat-prod
+    volumes:
+      - ./logs/celery:/app/logs
+    environment:
+      - DEBUG=False
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - backend
+      - redis
+      - db
+    command: celery -A pharos_backend beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    networks:
+      - pharos-network
+    restart: unless-stopped
+
+  # Flower - Celery Monitoring (Optional in production)
+  flower:
+    build:
+      context: ./pharos-ai-backend
+      dockerfile: Dockerfile
+    container_name: pharos-flower-prod
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - FLOWER_PORT=5555
+      - FLOWER_BASIC_AUTH=${FLOWER_USER}:${FLOWER_PASSWORD}
+    depends_on:
+      - redis
+      - celery-worker
+    command: celery -A pharos_backend flower --port=5555 --basic_auth=${FLOWER_USER}:${FLOWER_PASSWORD}
+    networks:
+      - pharos-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # React Frontend (Static files served by Nginx)
+  frontend:
+    build:
+      context: ./pharos-ai-frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+        - VITE_WS_URL=${VITE_WS_URL}
+    container_name: pharos-frontend-prod
+    volumes:
+      - frontend_dist:/app/dist
+    networks:
+      - pharos-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: pharos-nginx-prod
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - backend_static:/usr/share/nginx/html/static:ro
+      - backend_media:/usr/share/nginx/html/media:ro
+      - frontend_dist:/usr/share/nginx/html:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - pharos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  pharos-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_static:
+  backend_media:
+  frontend_dist:
