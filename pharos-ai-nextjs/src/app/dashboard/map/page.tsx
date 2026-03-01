@@ -26,9 +26,9 @@ import {
   type HeatPoint,
 } from '@/data/mapData';
 import { MAP_STORIES, type MapStory, type StoryEvent } from '@/data/mapStories';
-import StoryIcon from '@/components/dashboard/StoryIcon';
-import StoryTimeline from '@/components/dashboard/StoryTimeline';
-import MapDetailPanel, { type SelectedItem } from '@/components/dashboard/MapDetailPanel';
+import StoryIcon from '@/components/map/StoryIcon';
+import StoryTimeline from '@/components/map/StoryTimeline';
+import MapDetailPanel, { type SelectedItem } from '@/components/map/MapDetailPanel';
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
