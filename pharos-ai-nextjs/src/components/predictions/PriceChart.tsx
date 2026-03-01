@@ -1,0 +1,214 @@
+'use client';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import type { PricePoint } from '@/app/api/polymarket/chart/route';
+import { probColor } from './utils';
+
+const MIN_W = 220, MIN_H = 80, MAX_W = 900, MAX_H = 400;
+const PAD   = { top: 12, right: 12, bottom: 22, left: 36 };
+
+export function PriceChart({ yesTokenId }: { yesTokenId: string }) {
+  const [history,  setHistory]  = useState<PricePoint[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState(false);
+  const [size,     setSize]     = useState({ w: 360, h: 130 });
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  const svgRef    = useRef<SVGSVGElement>(null);
+  const resizeRef = useRef<{ sx: number; sy: number; sw: number; sh: number } | null>(null);
+
+  useEffect(() => {
+    if (!yesTokenId) { setLoading(false); setError(true); return; }
+    fetch(`/api/polymarket/chart?id=${encodeURIComponent(yesTokenId)}`)
+      .then(r => r.json())
+      .then((d: { history?: PricePoint[] }) => { setHistory(d.history ?? []); setLoading(false); })
+      .catch(() => { setError(true); setLoading(false); });
+  }, [yesTokenId]);
+
+  const onResizeDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    resizeRef.current = { sx: e.clientX, sy: e.clientY, sw: size.w, sh: size.h };
+    const onMove = (ev: MouseEvent) => {
+      if (!resizeRef.current) return;
+      const nw = Math.max(MIN_W, Math.min(MAX_W, resizeRef.current.sw + ev.clientX - resizeRef.current.sx));
+      const nh = Math.max(MIN_H, Math.min(MAX_H, resizeRef.current.sh + ev.clientY - resizeRef.current.sy));
+      setSize({ w: nw, h: nh });
+    };
+    const onUp = () => { resizeRef.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [size]);
+
+  const onMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!svgRef.current || history.length < 2) return;
+    const rect   = svgRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const pts    = history;
+    const minT   = pts[0].t, maxT = pts[pts.length - 1].t;
+    const cW     = size.w - PAD.left - PAD.right;
+    const ratio  = (mouseX - PAD.left) / cW;
+    const tAtX   = minT + ratio * (maxT - minT);
+    let lo = 0, hi = pts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (pts[mid].t < tAtX) lo = mid + 1; else hi = mid;
+    }
+    const idx = lo > 0 && Math.abs(pts[lo - 1].t - tAtX) < Math.abs(pts[lo].t - tAtX) ? lo - 1 : lo;
+    setHoverIdx(idx);
+  }, [history, size.w]);
+
+  const { w, h } = size;
+  const chartW = w - PAD.left - PAD.right;
+  const chartH = h - PAD.top - PAD.bottom;
+  const gradId = `fill-${yesTokenId.slice(-8)}`;
+
+  const placeholder = (msg: string) => (
+    <div style={{ width: w, height: h + 24, display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 9, fontFamily: 'SFMono-Regular, Menlo, monospace', color: 'var(--t4)', letterSpacing: '0.08em' }}>PRICE HISTORY</span>
+      </div>
+      <div style={{ flex: 1, border: '1px solid var(--bd)', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 9, fontFamily: 'SFMono-Regular, Menlo, monospace', color: 'var(--t4)', letterSpacing: '0.06em' }}>{msg}</span>
+      </div>
+    </div>
+  );
+
+  if (loading) return placeholder('LOADING CHART...');
+  if (error || history.length < 2) return placeholder('NO PRICE HISTORY');
+
+  const pts    = history;
+  const minT   = pts[0].t, maxT = pts[pts.length - 1].t;
+  const lastP  = pts[pts.length - 1].p;
+  const firstP = pts[0].p;
+  const change = lastP - firstP;
+  const color  = probColor(lastP);
+
+  const scaleX = (t: number) => PAD.left + ((t - minT) / (maxT - minT || 1)) * chartW;
+  const scaleY = (p: number) => PAD.top  + (1 - p) * chartH;
+
+  const linePts  = pts.map(pt => `${scaleX(pt.t).toFixed(1)},${scaleY(pt.p).toFixed(1)}`).join(' ');
+  const areaPath = [
+    `M ${scaleX(pts[0].t).toFixed(1)} ${(PAD.top + chartH).toFixed(1)}`,
+    ...pts.map(pt => `L ${scaleX(pt.t).toFixed(1)} ${scaleY(pt.p).toFixed(1)}`),
+    `L ${scaleX(pts[pts.length - 1].t).toFixed(1)} ${(PAD.top + chartH).toFixed(1)}`, 'Z',
+  ].join(' ');
+
+  const gridLines = [0, 0.25, 0.5, 0.75, 1];
+  const hPt      = hoverIdx !== null ? pts[hoverIdx] : null;
+  const hX       = hPt ? scaleX(hPt.t) : null;
+  const hY       = hPt ? scaleY(hPt.p) : null;
+  const hColor   = hPt ? probColor(hPt.p) : color;
+  const hDate    = hPt ? new Date(hPt.t * 1000) : null;
+  const hDelta   = hPt ? hPt.p - firstP : null;
+  const tooltipLeft = hX !== null && hX > w / 2;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, userSelect: 'none' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 9, fontFamily: 'SFMono-Regular, Menlo, monospace', color: 'var(--t4)', letterSpacing: '0.08em' }}>PRICE HISTORY</span>
+        <span style={{ fontSize: 9, fontFamily: 'SFMono-Regular, Menlo, monospace', fontWeight: 700, letterSpacing: '0.06em', color: change >= 0 ? '#23A26D' : '#E76A6E' }}>
+          {change >= 0 ? '+' : ''}{(change * 100).toFixed(1)}%
+        </span>
+        {hPt && (
+          <span style={{ fontSize: 9, fontFamily: 'SFMono-Regular, Menlo, monospace', color: 'var(--t4)', marginLeft: 4 }}>
+            {hDate!.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
+            {' '}{hDate!.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            {'  '}<span style={{ color: hColor, fontWeight: 700 }}>{Math.round(hPt.p * 100)}%</span>
+          </span>
+        )}
+        <span style={{ marginLeft: 'auto', fontSize: 9, fontFamily: 'SFMono-Regular, Menlo, monospace', color: 'var(--t4)', opacity: 0.5 }}>
+          {pts.length} pts
+        </span>
+      </div>
+
+      <div style={{ position: 'relative', width: w, height: h }}>
+        <svg ref={svgRef} width={w} height={h} style={{ display: 'block', cursor: 'crosshair' }}
+          onMouseMove={onMouseMove} onMouseLeave={() => setHoverIdx(null)}>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor={color} stopOpacity="0.28" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+            </linearGradient>
+            <clipPath id={`clip-${gradId}`}>
+              <rect x={PAD.left} y={PAD.top} width={chartW} height={chartH} />
+            </clipPath>
+          </defs>
+          <rect x={PAD.left} y={PAD.top} width={chartW} height={chartH} fill="none" stroke="var(--bd)" strokeWidth={0.5} />
+          {gridLines.map(g => (
+            <g key={g}>
+              <line x1={PAD.left} y1={scaleY(g)} x2={w - PAD.right} y2={scaleY(g)}
+                stroke="var(--bd)" strokeWidth={0.5} strokeDasharray={g === 0 || g === 1 ? 'none' : '3,4'} />
+              <text x={PAD.left - 5} y={scaleY(g) + 3.5} fontSize={7} fill="var(--t4)"
+                textAnchor="end" fontFamily="SFMono-Regular, Menlo, monospace">
+                {Math.round(g * 100)}
+              </text>
+            </g>
+          ))}
+          <g clipPath={`url(#clip-${gradId})`}>
+            <path d={areaPath} fill={`url(#${gradId})`} />
+            <polyline points={linePts} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+          </g>
+          {hoverIdx === null && (
+            <circle cx={scaleX(pts[pts.length - 1].t)} cy={scaleY(lastP)} r={3}
+              fill={color} stroke="var(--bg-2)" strokeWidth={1.5} />
+          )}
+          {[pts[0], pts[Math.floor(pts.length / 2)], pts[pts.length - 1]].map((pt, i) => {
+            const x = scaleX(pt.t);
+            const lbl = new Date(pt.t * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+            return (
+              <text key={i} x={x} y={h - 5} fontSize={7} fill="var(--t4)"
+                textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}
+                fontFamily="SFMono-Regular, Menlo, monospace">{lbl}</text>
+            );
+          })}
+          {hX !== null && hY !== null && (
+            <>
+              <line x1={hX} y1={PAD.top} x2={hX} y2={PAD.top + chartH} stroke="var(--t3)" strokeWidth={1} strokeDasharray="3,3" />
+              <line x1={PAD.left} y1={hY} x2={w - PAD.right} y2={hY} stroke={hColor} strokeWidth={0.5} strokeDasharray="2,4" opacity={0.5} />
+              <circle cx={hX} cy={hY} r={4} fill={hColor} stroke="var(--bg-1)" strokeWidth={2} />
+              <rect x={0} y={hY - 7} width={PAD.left - 2} height={14} rx={1} fill="var(--bg-2)" stroke={hColor} strokeWidth={0.5} />
+              <text x={PAD.left - 5} y={hY + 3.5} fontSize={7} fill={hColor}
+                textAnchor="end" fontFamily="SFMono-Regular, Menlo, monospace" fontWeight="bold">
+                {Math.round(hPt!.p * 100)}
+              </text>
+            </>
+          )}
+        </svg>
+
+        {hX !== null && hY !== null && hPt && hDate && hDelta !== null && (
+          <div style={{
+            position: 'absolute',
+            top: Math.max(PAD.top, Math.min(h - 80, hY - 40)),
+            ...(tooltipLeft ? { right: w - hX + 10 } : { left: hX + 10 }),
+            pointerEvents: 'none',
+            background: 'var(--bg-app)', border: `1px solid ${hColor}`,
+            borderRadius: 2, padding: '6px 8px', minWidth: 120, zIndex: 10,
+          }}>
+            <div style={{ fontSize: 8, fontFamily: 'SFMono-Regular, Menlo, monospace', color: 'var(--t4)', letterSpacing: '0.08em', marginBottom: 4 }}>
+              {hDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }).toUpperCase()}
+              {'  '}{hDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <span style={{ fontSize: 8, fontFamily: 'SFMono-Regular, Menlo, monospace', color: 'var(--t3)' }}>YES</span>
+              <span style={{ fontSize: 16, fontFamily: 'SFMono-Regular, Menlo, monospace', fontWeight: 700, color: hColor, lineHeight: 1 }}>
+                {Math.round(hPt.p * 100)}%
+              </span>
+            </div>
+            <div style={{ marginTop: 4, fontSize: 8, fontFamily: 'SFMono-Regular, Menlo, monospace', color: hDelta >= 0 ? '#23A26D' : '#E76A6E', letterSpacing: '0.04em' }}>
+              {hDelta >= 0 ? '▲' : '▼'} {Math.abs(hDelta * 100).toFixed(1)}% from open
+            </div>
+          </div>
+        )}
+
+        <div onMouseDown={onResizeDown} style={{
+          position: 'absolute', bottom: 0, right: 0, width: 14, height: 14,
+          cursor: 'nwse-resize', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <svg width={8} height={8} viewBox="0 0 8 8" fill="none">
+            <line x1="2" y1="8" x2="8" y2="2" stroke="var(--t4)" strokeWidth={1.2} />
+            <line x1="5" y1="8" x2="8" y2="5" stroke="var(--t4)" strokeWidth={1.2} />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}

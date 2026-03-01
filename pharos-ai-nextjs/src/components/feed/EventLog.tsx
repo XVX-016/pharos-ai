@@ -1,0 +1,109 @@
+'use client';
+import { CheckCircle, ArrowRight } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import type { IntelEvent } from '@/data/iranEvents';
+import { getPostsForEvent } from '@/data/iranXPosts';
+
+const SEV_C: Record<string, string> = {
+  CRITICAL: 'var(--danger)', HIGH: 'var(--warning)', STANDARD: 'var(--info)',
+};
+
+function fmtTime(ts: string) { return new Date(ts).toISOString().slice(11, 16); }
+
+function groupByDate(events: IntelEvent[]) {
+  const groups: Record<string, IntelEvent[]> = {};
+  events.forEach(e => {
+    const d = new Date(e.timestamp).toISOString().slice(0, 10);
+    if (!groups[d]) groups[d] = [];
+    groups[d].push(e);
+  });
+  return groups;
+}
+
+interface Props {
+  events: IntelEvent[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}
+
+export function EventLog({ events, selectedId, onSelect }: Props) {
+  const grouped = groupByDate(events);
+
+  return (
+    <div style={{
+      width: 300, minWidth: 300, flexShrink: 0,
+      borderRight: '1px solid var(--bd)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      <div className="panel-header" style={{ justifyContent: 'space-between' }}>
+        <span className="section-title">Operation Epic Fury</span>
+        <span className="label">{events.length}</span>
+      </div>
+      {/* Column headers */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '40px 50px 1fr 24px',
+        padding: '4px 12px', borderBottom: '1px solid var(--bd)',
+        background: 'var(--bg-2)', flexShrink: 0,
+      }}>
+        {['TIME', 'SEV', 'TITLE', ''].map(h =>
+          <span key={h} className="label" style={{ fontSize: 8 }}>{h}</span>)}
+      </div>
+      <ScrollArea style={{ flex: 1 }}>
+        {events.length === 0 && (
+          <div style={{ padding: 24, textAlign: 'center' }}>
+            <span className="label">No results</span>
+          </div>
+        )}
+        {Object.entries(grouped).map(([date, dayEvents]) => (
+          <div key={date}>
+            <div style={{ padding: '4px 12px', background: 'var(--bg-2)', borderBottom: '1px solid var(--bd)' }}>
+              <span className="mono" style={{ fontSize: 9, color: 'var(--t3)' }}>{date}</span>
+            </div>
+            {dayEvents.map(evt => {
+              const isOn = selectedId === evt.id;
+              const sc   = SEV_C[evt.severity] ?? 'var(--info)';
+              const xc   = getPostsForEvent(evt.id).length;
+              return (
+                <button key={evt.id}
+                  onClick={() => onSelect(isOn ? null : evt.id)}
+                  className="row-btn"
+                  style={{
+                    display: 'grid', gridTemplateColumns: '40px 50px 1fr 24px',
+                    padding: '6px 12px',
+                    borderBottom: '1px solid var(--bd-s)',
+                    borderLeft: `3px solid ${isOn ? sc : 'transparent'}`,
+                    background: isOn ? 'var(--bg-sel)' : 'transparent',
+                  }}
+                >
+                  <span className="mono" style={{ fontSize: 9, color: 'var(--t3)', alignSelf: 'center' }}>
+                    {fmtTime(evt.timestamp)}
+                  </span>
+                  <div style={{ alignSelf: 'center' }}>
+                    <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.06em', color: sc }}>
+                      {evt.severity.slice(0, 4)}
+                    </span>
+                  </div>
+                  <div>
+                    <p style={{
+                      fontSize: 11, color: 'var(--t1)', lineHeight: 1.3, textAlign: 'left',
+                      display: '-webkit-box', WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>
+                      {evt.title}
+                    </p>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 2 }}>
+                      <span className="mono" style={{ fontSize: 8, color: 'var(--t3)' }}>{evt.sources.length}src</span>
+                      {xc > 0 && <span className="mono" style={{ fontSize: 8, color: 'var(--t2)' }}>𝕏{xc}</span>}
+                      {evt.verified && <CheckCircle size={8} style={{ color: 'var(--success)' }} strokeWidth={2} />}
+                    </div>
+                  </div>
+                  <ArrowRight size={9} style={{ color: 'var(--t3)', alignSelf: 'center' }} strokeWidth={1.5} />
+                </button>
+              );
+            })}
+          </div>
+        ))}
+      </ScrollArea>
+    </div>
+  );
+}

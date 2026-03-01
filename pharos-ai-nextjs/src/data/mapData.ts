@@ -30,7 +30,7 @@ export interface Asset {
   name: string;
   position: [number, number];
   type: 'CARRIER' | 'AFB' | 'NAVAL_BASE' | 'ARMY_BASE';
-  nation: 'US' | 'ISRAEL';
+  nation: 'US' | 'ISRAEL' | 'NATO';
   description?: string;
 }
 
@@ -117,6 +117,32 @@ export const ALLIED_ASSETS: Asset[] = [
   { id: 'a13', name: 'Diego Garcia', position: [72.4232, -7.3195], type: 'AFB', nation: 'US', description: 'USAF/USN BIOT · B-2 Spirit launch origin · ~7,000km from targets' },
   { id: 'a14', name: 'Al-Tanf Base Syria', position: [38.6, 33.5], type: 'ARMY_BASE', nation: 'US' },
   { id: 'a15', name: 'Ayn al-Asad Iraq', position: [42.4412, 33.7856], type: 'ARMY_BASE', nation: 'US' },
+
+  // ── Additional US bases (Gulf / Middle East) ──────────────────────────────
+  { id: 'a16', name: 'Erbil Air Base', position: [44.0901, 36.2337], type: 'AFB', nation: 'US', description: 'USAF FOL · Iraqi Kurdistan · F-15E/AWACS ops · CAOC coordination node' },
+  { id: 'a17', name: 'Camp Arifjan', position: [48.0400, 29.2000], type: 'ARMY_BASE', nation: 'US', description: '1st TSC HQ · Kuwait · Pre-positioned armor/equipment · ~20,000 US troops' },
+  { id: 'a18', name: 'Al Jaber AB', position: [47.7886, 29.0925], type: 'AFB', nation: 'US', description: 'USAF/KUAF joint · Kuwait · A-10C / F-16 rotational · CAS mission hub' },
+  { id: 'a19', name: 'Thumrait AB', position: [54.0247, 17.6694], type: 'AFB', nation: 'US', description: 'USAF FOL · Southern Oman · B-52H staging, KC-135 tankers, ISR orbit' },
+  { id: 'a20', name: 'Masirah Island AB', position: [58.9033, 20.6681], type: 'AFB', nation: 'US', description: 'USAF/USN · Oman · P-8A Poseidon maritime patrol · Indian Ocean access node' },
+  { id: 'a21', name: 'Camp Lemonnier', position: [43.1471, 11.5466], type: 'AFB', nation: 'US', description: 'AFRICOM primary base · Djibouti · ~4,000 personnel · JSOC/drone strike hub' },
+  { id: 'a22', name: 'Muwaffaq Salti AB', position: [36.7922, 32.3566], type: 'AFB', nation: 'US', description: 'USAF FOL · Jordan · F-22 / F-16 rotational · Western Iraq strike corridor' },
+  { id: 'a23', name: 'King Faisal AB Tabuk', position: [36.6189, 28.3654], type: 'AFB', nation: 'US', description: 'USAF rotational · NW Saudi Arabia · Red Sea access · RSAF joint ops' },
+  { id: 'a24', name: 'King Khalid AB Khamis', position: [42.8000, 18.3000], type: 'AFB', nation: 'US', description: 'USAF · SW Saudi Arabia · Patriot battery + F-15C air defense cover' },
+  { id: 'a25', name: 'Fujairah Naval Facility', position: [56.3394, 25.1217], type: 'NAVAL_BASE', nation: 'US', description: 'USN fueling/access · UAE · Outside Strait of Hormuz · Strategic positioning' },
+
+  // ── NATO bases ─────────────────────────────────────────────────────────────
+  { id: 'a26', name: 'Incirlik AB', position: [35.4259, 37.0021], type: 'AFB', nation: 'NATO', description: 'USAF/NATO · Turkey · B61 nuclear store · ~1,500 US personnel · F-16 hub' },
+  { id: 'a27', name: 'RAF Akrotiri', position: [32.9883, 34.5903], type: 'AFB', nation: 'NATO', description: 'UK sovereign base · Cyprus · Typhoon FGR4 · Sentinel R1 ISR · Regional strike role' },
+  { id: 'a28', name: 'Souda Bay Naval Base', position: [24.0739, 35.4935], type: 'NAVAL_BASE', nation: 'NATO', description: 'US/NATO · Crete · DDG/CG port calls · P-8 Poseidon maritime patrol' },
+  { id: 'a29', name: 'NAS Sigonella', position: [14.9228, 37.4017], type: 'AFB', nation: 'NATO', description: 'USAF/USN · Sicily · P-8A, MQ-4C Triton, C-17 logistics · Med hub' },
+  { id: 'a30', name: 'Aviano AB', position: [12.5978, 46.0313], type: 'AFB', nation: 'NATO', description: 'USAF 31st FW · NE Italy · F-16C/D Block 40/50 · Nuclear sharing DCA mission' },
+
+  // ── Additional IDF ─────────────────────────────────────────────────────────
+  { id: 'a31', name: 'Ramat David AFB', position: [35.1795, 32.6653], type: 'AFB', nation: 'ISRAEL', description: 'IDF Air Force · Northern Israel · F-16I Sufa · Haifa air defense corridor' },
+  { id: 'a32', name: 'Hatzor AFB', position: [34.7231, 31.7605], type: 'AFB', nation: 'ISRAEL', description: 'IDF Air Force · Central Israel · F-16C/D · Strike and QRA mission' },
+
+  // ── Additional carrier ─────────────────────────────────────────────────────
+  { id: 'a33', name: 'USS Truman CVN-75', position: [28.0, 34.5], type: 'CARRIER', nation: 'US', description: 'CSG-8 · Eastern Mediterranean · F/A-18 SEAD/DEAD sorties · Aegis BMD cover for NATO' },
 ];
 
 export const THREAT_ZONES: ThreatZone[] = [

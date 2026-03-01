@@ -309,7 +309,9 @@ export default function FullMapPage() {
 
   const getAssetFillColor = (d: Asset): [number, number, number, number] => {
     const baseColor: [number, number, number, number] =
-      d.nation === 'US' ? [45, 114, 210, 220] : [50, 200, 200, 220];
+      d.nation === 'US'   ? [45, 114, 210, 220]
+      : d.nation === 'NATO' ? [160, 100, 220, 220]
+      : [50, 200, 200, 220];
     if (dimActive && !activeStory!.highlightAssetIds.includes(d.id)) {
       return [baseColor[0], baseColor[1], baseColor[2], 40];
     }
@@ -507,7 +509,7 @@ export default function FullMapPage() {
       `;
     } else if (layerId === 'assets') {
       const d = object as Asset;
-      const nationColor = d.nation === 'US' ? '#4C9BE8' : '#32C8C8';
+      const nationColor = d.nation === 'US' ? '#4C9BE8' : d.nation === 'NATO' ? '#B47AE8' : '#32C8C8';
       let extraLine = '';
       if (d.type === 'CARRIER') {
         extraLine = `<div style="color:#E8E84C;font-size:10px;margin-top:4px;font-weight:700">▶ CARRIER STRIKE GROUP</div>`;
@@ -832,6 +834,7 @@ export default function FullMapPage() {
             { color: '#DCC832', shape: 'circle', label: 'TARGETED' },
             { color: '#2D72D2', shape: 'circle', label: 'US ASSET' },
             { color: '#32C8C8', shape: 'circle', label: 'IDF ASSET' },
+            { color: '#A064DC', shape: 'circle', label: 'NATO ASSET' },
             { color: '#DC3232', shape: 'zone', label: 'CLOSURE ZONE' },
             { color: '#DC9632', shape: 'zone', label: 'PATROL ZONE' },
           ].map(({ color, shape, label }) => (

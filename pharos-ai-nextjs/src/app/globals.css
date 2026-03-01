@@ -43,6 +43,25 @@
   --info-dim:    rgba(76,  144, 240, 0.12);
 }
 
+/* ── shadcn/Tailwind CSS-var bridge ── */
+:root {
+  --background:        var(--bg-1);
+  --foreground:        var(--t1);
+  --muted:             var(--bg-3);
+  --muted-foreground:  var(--t3);
+  --border:            var(--bd);
+  --input:             var(--bg-3);
+  --ring:              var(--blue);
+  --primary:           var(--blue);
+  --primary-foreground: var(--t1);
+  --secondary:         var(--bg-2);
+  --secondary-foreground: var(--t2);
+  --accent:            var(--bg-3);
+  --accent-foreground: var(--t1);
+  --destructive:       var(--danger);
+  --radius:            2px;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
 

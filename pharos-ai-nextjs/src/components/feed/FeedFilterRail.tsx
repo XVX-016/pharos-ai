@@ -1,0 +1,62 @@
+'use client';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { FilterBlock, CheckboxRow } from '@/components/shared/FilterControls';
+import type { Severity, EventType } from '@/data/iranEvents';
+
+export const ALL_TYPES: EventType[] = ['MILITARY', 'DIPLOMATIC', 'INTELLIGENCE', 'ECONOMIC', 'HUMANITARIAN', 'POLITICAL'];
+
+const SEV_C: Record<Severity, string> = {
+  CRITICAL: 'var(--danger)', HIGH: 'var(--warning)', STANDARD: 'var(--info)',
+};
+const TYPE_C: Record<EventType, string> = {
+  MILITARY: 'var(--danger)', DIPLOMATIC: 'var(--info)', INTELLIGENCE: '#a78bfa',
+  ECONOMIC: 'var(--warning)', HUMANITARIAN: 'var(--success)', POLITICAL: 'var(--t2)',
+};
+
+interface Props {
+  sevFilter: Record<Severity, boolean>;
+  typeFilter: Record<EventType, boolean>;
+  verOnly: boolean;
+  totalFiltered: number;
+  onSevChange: (s: Severity, v: boolean) => void;
+  onTypeChange: (t: EventType, v: boolean) => void;
+  onVerChange: (v: boolean) => void;
+}
+
+export function FeedFilterRail({
+  sevFilter, typeFilter, verOnly, totalFiltered,
+  onSevChange, onTypeChange, onVerChange,
+}: Props) {
+  return (
+    <div style={{
+      width: 160, minWidth: 160, flexShrink: 0,
+      borderRight: '1px solid var(--bd)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+    }}>
+      <div className="panel-header">
+        <span className="section-title">Filters</span>
+      </div>
+      <ScrollArea style={{ flex: 1 }}>
+        <FilterBlock label="SEVERITY">
+          {(['CRITICAL', 'HIGH', 'STANDARD'] as Severity[]).map(s => (
+            <CheckboxRow key={s} label={s} color={SEV_C[s]}
+              checked={sevFilter[s]} onChange={v => onSevChange(s, v)} />
+          ))}
+        </FilterBlock>
+        <FilterBlock label="VERIFIED">
+          <CheckboxRow label="ONLY VERIFIED" color="var(--success)"
+            checked={verOnly} onChange={onVerChange} />
+        </FilterBlock>
+        <FilterBlock label="EVENT TYPE">
+          {ALL_TYPES.map(t => (
+            <CheckboxRow key={t} label={t} color={TYPE_C[t]}
+              checked={typeFilter[t]} onChange={v => onTypeChange(t, v)} />
+          ))}
+        </FilterBlock>
+      </ScrollArea>
+      <div style={{ padding: '8px 12px', borderTop: '1px solid var(--bd)', flexShrink: 0 }}>
+        <span className="mono" style={{ fontSize: 9, color: 'var(--t3)' }}>{totalFiltered} EVENTS</span>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,64 @@
+'use client';
+import {
+  Plane, Radiation, Anchor, Crosshair, Ship, Skull, Zap,
+  Target, Swords, Shield, Flame, AlertTriangle, type LucideProps,
+} from 'lucide-react';
+import type { FC } from 'react';
+
+const ICON_MAP: Record<string, FC<LucideProps>> = {
+  Plane, Radiation, Anchor, Crosshair, Ship, Skull, Zap,
+  Target, Swords, Shield, Flame, AlertTriangle,
+};
+
+const CATEGORY_COLOR: Record<string, string> = {
+  STRIKE:      '#E84C4C',
+  RETALIATION: '#E8A84C',
+  NAVAL:       '#4C9BE8',
+  INTEL:       '#B84CE8',
+  DIPLOMATIC:  '#4CE8A8',
+};
+
+const CATEGORY_BG: Record<string, string> = {
+  STRIKE:      'rgba(232,76,76,0.15)',
+  RETALIATION: 'rgba(232,168,76,0.15)',
+  NAVAL:       'rgba(76,155,232,0.15)',
+  INTEL:       'rgba(184,76,232,0.15)',
+  DIPLOMATIC:  'rgba(76,232,168,0.15)',
+};
+
+interface StoryIconProps {
+  iconName: string;
+  category: string;
+  size?: number;          // icon px size, default 16
+  boxSize?: number;       // outer box px size, default 28
+  style?: React.CSSProperties;
+}
+
+export default function StoryIcon({
+  iconName,
+  category,
+  size = 16,
+  boxSize = 28,
+  style,
+}: StoryIconProps) {
+  const Icon = ICON_MAP[iconName] ?? AlertTriangle;
+  const color = CATEGORY_COLOR[category] ?? '#8F99A8';
+  const bg    = CATEGORY_BG[category]    ?? 'rgba(143,153,168,0.12)';
+
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width:  boxSize,
+      height: boxSize,
+      background: bg,
+      border: `1px solid ${color}33`,
+      borderRadius: 2,
+      flexShrink: 0,
+      ...style,
+    }}>
+      <Icon size={size} strokeWidth={2.5} color={color} />
+    </span>
+  );
+}

@@ -424,7 +424,7 @@ function AssetContent({
   d: Asset;
   onActivateStory: (story: MapStory) => void;
 }) {
-  const nationColor = d.nation === 'US' ? '#4C9BE8' : d.nation === 'NATO' ? '#B47AE8' : '#32C8C8';
+  const nationColor = d.nation === 'US' ? '#4C9BE8' : '#32C8C8';
   const relatedStories = storiesFor([d.id], 'highlightAssetIds');
 
   return (
@@ -447,7 +447,7 @@ function AssetContent({
         label="COORDINATES"
         value={`${d.position[1].toFixed(2)}°N, ${d.position[0].toFixed(2)}°E`}
       />
-      <Row label="NATION" value={d.nation === 'US' ? 'United States' : d.nation === 'NATO' ? 'NATO / Ally' : 'Israel'} color={nationColor} />
+      <Row label="NATION" value={d.nation === 'US' ? 'United States' : 'Israel'} color={nationColor} />
 
       <RelatedStories stories={relatedStories} onActivate={onActivateStory} />
     </>
