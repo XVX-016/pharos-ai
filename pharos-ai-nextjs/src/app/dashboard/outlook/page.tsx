@@ -4,117 +4,221 @@ import { useAppDispatch, useAppSelector } from '@/hooks/redux';
 import { fetchOutlooks } from '@/store/slices/outlookSlice';
 import { TopicSidebar } from '@/components/dashboard/TopicSidebar';
 import { useRouter } from 'next/navigation';
-import { Clock, Globe, FileText } from 'lucide-react';
+import { Clock, Globe, FileText, ArrowRight } from 'lucide-react';
 
-const SEP = 'rgba(0,0,0,0.09)';
-const LABEL = 'rgba(0,0,0,0.88)';
-const LABEL2 = 'rgba(0,0,0,0.50)';
-const LABEL3 = 'rgba(0,0,0,0.28)';
-const SYS_BLUE = '#007AFF';
-
-const PILL: Record<string, { bg: string; text: string; border: string }> = {
-  default: { bg: 'rgba(142,142,147,0.10)', text: '#555558', border: 'rgba(142,142,147,0.20)' },
-};
-function pc(topic: string) { return PILL.default; }
+const BORDER   = '#e2e8f0';
+const TEXT     = '#0f172a';
+const TEXT2    = '#64748b';
+const TEXT3    = '#94a3b8';
+const BG_LIGHT = '#f8fafc';
+const RED      = '#dd4545';
 
 export default function OutlookListPage() {
   const dispatch = useAppDispatch();
-  const router = useRouter();
+  const router   = useRouter();
   const { outlooks, loading, pagination } = useAppSelector(s => s.outlook);
   const [selectedTopic, setSelectedTopic] = useState('all');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId]       = useState<string | null>(null);
 
   useEffect(() => { dispatch(fetchOutlooks({ limit: 20, offset: 0 })); }, [dispatch]);
 
-  const selected = outlooks.find(o => o.id === selectedId);
+  const selected = outlooks.find(o => o.id === selectedId) ?? null;
 
   return (
     <>
       <TopicSidebar selected={selectedTopic} onSelect={setSelectedTopic} />
 
-      {/* List pane */}
-      <div className="flex flex-col overflow-hidden flex-shrink-0" style={{ width: 320, borderRight: `0.5px solid ${SEP}`, background: '#F8F8F8' }}>
-        <div
-          className="flex items-center px-4 flex-shrink-0"
-          style={{ height: 44, borderBottom: `0.5px solid ${SEP}`, background: 'rgba(246,246,246,0.93)', backdropFilter: 'blur(20px) saturate(180%)' }}
-        >
-          <span className="text-[15px] font-semibold flex-1 tracking-[-0.01em]" style={{ color: LABEL }}>Outlooks</span>
-          <span className="text-[12px]" style={{ color: LABEL3 }}>{pagination?.total ?? 0} total</span>
+      {/* ── List pane ─────────────────────────────────────── */}
+      <div style={{
+        width: 340, minWidth: 340, flexShrink: 0,
+        borderRight: `1px solid ${BORDER}`,
+        background: 'white',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '12px 16px',
+          borderBottom: `2px solid ${RED}`,
+          background: BG_LIGHT,
+        }}>
+          <div className="news-meta" style={{ fontSize: 10, color: TEXT3, marginBottom: 2 }}>Intelligence Briefings</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="news-headline" style={{ fontSize: 16, color: TEXT }}>DAILY OUTLOOKS</div>
+            <span className="news-meta" style={{ fontSize: 10, color: TEXT3 }}>{pagination?.total ?? 0} total</span>
+          </div>
         </div>
-        <div className="flex-1 overflow-y-auto">
+
+        {/* List */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           {loading.list && outlooks.length === 0 && (
-            <div className="flex justify-center py-12"><span className="text-[12px]" style={{ color: LABEL3 }}>Loading…</span></div>
+            <div style={{ padding: '24px 16px', textAlign: 'center', fontSize: 12, color: TEXT3, fontFamily: 'Arial, sans-serif' }}>
+              Loading outlooks…
+            </div>
           )}
-          {outlooks.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => setSelectedId(o.id)}
-              className="w-full text-left flex flex-col px-4 py-3 transition-colors"
-              style={{ background: selectedId === o.id ? '#2F6EBA' : 'transparent', borderBottom: `0.5px solid ${SEP}` }}
-              onMouseEnter={e => { if (selectedId !== o.id) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.04)'; }}
-              onMouseLeave={e => { if (selectedId !== o.id) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-            >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-semibold px-2 py-[2px] rounded-full border-[0.5px]"
-                  style={selectedId === o.id
-                    ? { background: 'rgba(255,255,255,0.20)', color: 'white', borderColor: 'rgba(255,255,255,0.30)' }
-                    : { background: 'rgba(142,142,147,0.10)', color: '#555558', borderColor: 'rgba(142,142,147,0.20)' }}>
-                  {o.topic}
-                </span>
-                <span className="text-[11px]" style={{ color: selectedId === o.id ? 'rgba(255,255,255,0.60)' : LABEL3 }}>{o.date}</span>
-              </div>
-              <p className="text-[13px] font-semibold leading-snug mb-1 line-clamp-2 tracking-[-0.01em]"
-                style={{ color: selectedId === o.id ? 'white' : LABEL }}>{o.title}</p>
-              <p className="text-[12px] leading-[1.4] line-clamp-2"
-                style={{ color: selectedId === o.id ? 'rgba(255,255,255,0.75)' : LABEL2 }}>{o.summary}</p>
-              <div className="flex items-center gap-3 mt-2">
-                <span className="flex items-center gap-1 text-[11px]" style={{ color: selectedId === o.id ? 'rgba(255,255,255,0.55)' : LABEL3 }}>
-                  <Clock size={10} strokeWidth={1.5} />{o.readTime}
-                </span>
-                <span className="text-[11px]" style={{ color: selectedId === o.id ? 'rgba(255,255,255,0.55)' : LABEL3 }}>
-                  {o.sourceCount} sources
-                </span>
-              </div>
-            </button>
-          ))}
+          {outlooks.map(o => {
+            const isOn = selectedId === o.id;
+            return (
+              <button
+                key={o.id}
+                onClick={() => setSelectedId(isOn ? null : o.id)}
+                style={{
+                  width: '100%', textAlign: 'left', display: 'block',
+                  padding: '12px 16px',
+                  borderLeft: `4px solid ${isOn ? RED : 'transparent'}`,
+                  borderTop: 'none', borderRight: 'none',
+                  borderBottom: `1px solid ${BORDER}`,
+                  background: isOn ? '#fef2f2' : 'white',
+                  cursor: 'pointer', fontFamily: 'inherit', transition: 'background 0.08s',
+                }}
+                onMouseEnter={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = BG_LIGHT; }}
+                onMouseLeave={e => { if (!isOn) (e.currentTarget as HTMLElement).style.background = 'white'; }}
+              >
+                {/* Topic badge + date */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <span className="news-meta" style={{
+                    fontSize: 9, padding: '2px 6px', borderRadius: 2,
+                    background: isOn ? RED : '#1e293b', color: 'white',
+                  }}>
+                    {o.topic}
+                  </span>
+                  <span style={{ fontSize: 11, color: TEXT3, fontFamily: 'Arial, sans-serif' }}>{o.date}</span>
+                </div>
+
+                {/* Title */}
+                <p className="news-headline" style={{
+                  fontSize: 13, color: TEXT, lineHeight: 1.35, marginBottom: 4,
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                }}>
+                  {o.title}
+                </p>
+
+                {/* Summary */}
+                <p className="news-body" style={{
+                  fontSize: 12, color: TEXT2, lineHeight: 1.4,
+                  display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                }}>
+                  {o.summary}
+                </p>
+
+                {/* Meta */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 5 }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: TEXT3, fontFamily: 'Arial, sans-serif' }}>
+                    <Clock size={10} strokeWidth={1.5} />{o.readTime}
+                  </span>
+                  {o.sourceCount != null && (
+                    <span style={{ fontSize: 11, color: TEXT3, fontFamily: 'Arial, sans-serif' }}>{o.sourceCount} sources</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Detail */}
-      <div className="flex-1 flex flex-col overflow-hidden" style={{ background: '#FFFFFF' }}>
+      {/* ── Detail pane ───────────────────────────────────── */}
+      <div style={{ flex: 1, minWidth: 0, background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {!selected ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3">
-            <FileText size={40} style={{ color: LABEL3 }} strokeWidth={1} />
-            <p className="text-[14px] font-medium tracking-[-0.01em]" style={{ color: LABEL2 }}>Select an outlook</p>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+            <FileText size={44} style={{ color: '#e2e8f0' }} strokeWidth={1} />
+            <p className="news-meta" style={{ fontSize: 11, color: TEXT3 }}>Select an outlook to read</p>
           </div>
         ) : (
           <>
-            <div className="flex items-center px-4 gap-3 flex-shrink-0"
-              style={{ height: 44, borderBottom: `0.5px solid ${SEP}`, background: 'rgba(246,246,246,0.93)', backdropFilter: 'blur(20px) saturate(180%)' }}>
-              <span className="flex-1 text-[13px] font-medium truncate" style={{ color: LABEL2 }}>{selected.topic} · {selected.date}</span>
-              <button
-                onClick={() => router.push(`/outlook/${selected.id}`)}
-                className="flex items-center gap-1.5 px-3 py-[5px] rounded-[6px] text-[12.5px] font-medium"
-                style={{ background: SYS_BLUE, color: 'white' }}>
-                Open Full Briefing
-              </button>
+            {/* Toolbar */}
+            <div style={{
+              padding: '10px 20px', flexShrink: 0,
+              borderBottom: `1px solid ${BORDER}`,
+              background: BG_LIGHT,
+              display: 'flex', alignItems: 'center', gap: 12,
+            }}>
+              <span className="news-meta" style={{
+                fontSize: 10, padding: '3px 8px', borderRadius: 2,
+                background: RED, color: 'white',
+              }}>
+                {selected.topic}
+              </span>
+              <span style={{ fontSize: 12, color: TEXT3, fontFamily: 'Arial, sans-serif' }}>{selected.date}</span>
+              <div style={{ marginLeft: 'auto' }}>
+                <button
+                  onClick={() => router.push(`/outlook/${selected.id}`)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '6px 14px', borderRadius: 2,
+                    background: '#0f172a', border: 'none',
+                    fontSize: 11, fontFamily: 'Arial, sans-serif', fontWeight: 700,
+                    color: 'white', cursor: 'pointer',
+                    textTransform: 'uppercase', letterSpacing: '0.05em',
+                  }}
+                >
+                  Full Briefing <ArrowRight size={12} strokeWidth={2} />
+                </button>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto flex justify-center">
-              <div className="w-full max-w-2xl px-6 py-9">
-                <h1 className="text-[28px] font-bold leading-[1.25] tracking-[-0.03em] mb-3.5" style={{ color: LABEL }}>{selected.title}</h1>
-                <div className="flex items-center gap-3 flex-wrap pb-4 mb-5" style={{ borderBottom: `0.5px solid ${SEP}` }}>
-                  <span className="flex items-center gap-1.5 text-[12px]" style={{ color: LABEL2 }}><Clock size={12} strokeWidth={1.5} />{selected.date} · {selected.readTime}</span>
-                  {selected.regions?.length > 0 && <span className="flex items-center gap-1.5 text-[12px]" style={{ color: LABEL2 }}><Globe size={12} strokeWidth={1.5} />{selected.regions.join(', ')}</span>}
+
+            {/* Body */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              <div style={{ padding: '28px 36px' }}>
+                {/* Tags */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+                  <span className="news-meta" style={{ fontSize: 10, padding: '3px 8px', borderRadius: 2, background: RED, color: 'white' }}>
+                    {selected.topic}
+                  </span>
+                  {selected.confidenceScore != null && (
+                    <span className="news-meta" style={{ fontSize: 10, padding: '3px 8px', borderRadius: 2, background: '#15803d', color: 'white' }}>
+                      {Math.round(selected.confidenceScore * 100)}% CONFIDENCE
+                    </span>
+                  )}
                 </div>
-                <div className="mb-7 rounded-[0_10px_10px_0] p-4"
-                  style={{ background: 'rgba(0,122,255,0.05)', border: '0.5px solid rgba(0,122,255,0.18)', borderLeft: `3px solid ${SYS_BLUE}` }}>
-                  <div className="text-[10.5px] font-bold uppercase tracking-[0.07em] mb-1.5" style={{ color: SYS_BLUE }}>Executive Summary</div>
-                  <p className="text-[14.5px] leading-[1.65]" style={{ color: LABEL }}>{selected.summary}</p>
+
+                {/* Title */}
+                <h1 className="news-headline" style={{
+                  fontSize: 26, color: TEXT, lineHeight: 1.2, marginBottom: 12,
+                }}>
+                  {selected.title}
+                </h1>
+
+                {/* Meta */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+                  paddingBottom: 16, marginBottom: 20,
+                  borderBottom: `1px solid ${BORDER}`,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: TEXT2, fontFamily: 'Arial, sans-serif' }}>
+                    <Clock size={12} strokeWidth={1.5} />
+                    {selected.date} · {selected.readTime}
+                  </div>
+                  {selected.regions?.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: TEXT2, fontFamily: 'Arial, sans-serif' }}>
+                      <Globe size={12} strokeWidth={1.5} />
+                      {selected.regions.join(', ')}
+                    </div>
+                  )}
+                  {selected.sourceCount != null && (
+                    <span style={{ fontSize: 12, color: TEXT2, fontFamily: 'Arial, sans-serif' }}>{selected.sourceCount} sources</span>
+                  )}
                 </div>
-                <button onClick={() => router.push(`/outlook/${selected.id}`)}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-[10px] text-[14px] font-semibold"
-                  style={{ background: SYS_BLUE, color: 'white' }}>
-                  Read Full Intelligence Briefing
+
+                {/* Summary */}
+                <div className="news-meta" style={{ fontSize: 10, color: TEXT3, marginBottom: 10 }}>Executive Summary</div>
+                <div style={{ borderLeft: `4px solid ${RED}`, paddingLeft: 16, marginBottom: 28 }}>
+                  <p className="news-body" style={{ fontSize: 14, color: '#1e293b', lineHeight: 1.7 }}>
+                    {selected.summary}
+                  </p>
+                </div>
+
+                {/* CTA */}
+                <button
+                  onClick={() => router.push(`/outlook/${selected.id}`)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    padding: '12px 16px', borderRadius: 2,
+                    background: '#0f172a', border: 'none',
+                    fontSize: 12, fontFamily: 'Arial, sans-serif', fontWeight: 700,
+                    color: 'white', cursor: 'pointer',
+                    textTransform: 'uppercase', letterSpacing: '0.06em',
+                  }}
+                >
+                  Read Full Intelligence Briefing <ArrowRight size={14} strokeWidth={2} />
                 </button>
               </div>
             </div>
