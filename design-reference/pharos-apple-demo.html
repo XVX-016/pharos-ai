@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharos · Intelligence</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    /* ── Apple System Design Tokens ─────────────────────────────── */
+    :root {
+      /* macOS window surfaces */
+      --window-bg:       #ECECEC;
+      --sidebar-bg:      rgba(238,238,238,0.88);
+      --toolbar-bg:      rgba(246,246,246,0.92);
+      --content-bg:      #FFFFFF;
+      --panel-bg:        #F8F8F8;
+      --selected-bg:     #2F6EBA;
+      --selected-unfocused: rgba(0,0,0,0.08);
+      --hover-bg:        rgba(0,0,0,0.04);
+
+      /* Separators — ultra-thin */
+      --sep:             rgba(0,0,0,0.10);
+      --sep-strong:      rgba(0,0,0,0.16);
+
+      /* Text — semantic, not hex-based */
+      --label:           rgba(0,0,0,0.88);
+      --label-2:         rgba(0,0,0,0.55);
+      --label-3:         rgba(0,0,0,0.30);
+      --label-4:         rgba(0,0,0,0.18);
+      --label-on-sel:    #FFFFFF;
+
+      /* SF System colors */
+      --sys-blue:        #007AFF;
+      --sys-red:         #FF3B30;
+      --sys-green:       #28CD41;
+      --sys-orange:      #FF9500;
+      --sys-purple:      #AF52DE;
+      --sys-yellow:      #FFCC00;
+      --sys-teal:        #59ADC4;
+      --sys-gray:        #8E8E93;
+
+      /* Typography — SF Pro approximation with Inter */
+      --font: -apple-system, "SF Pro Text", "Inter", "Helvetica Neue", sans-serif;
+      --font-display: -apple-system, "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
+
+      /* Radii — concentric geometry */
+      --r-sm:   4px;
+      --r:      6px;
+      --r-md:  10px;
+      --r-lg:  14px;
+      --r-xl:  20px;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; overflow:hidden; }
+
+    body {
+      font-family: var(--font);
+      background: var(--window-bg);
+      color: var(--label);
+      font-size: 13px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      display: flex;
+      flex-direction: column;
+    }
+
+    ::-webkit-scrollbar { width: 7px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.2);
+      border-radius: 4px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); background-clip: padding-box; }
+
+    /* ── Window chrome: traffic lights ─────────────────────────── */
+    .titlebar {
+      height: 38px;
+      background: var(--toolbar-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 0.5px solid var(--sep);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+      flex-shrink: 0;
+      position: relative;
+      -webkit-app-region: drag;
+    }
+
+    .traffic {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      border: 0.5px solid rgba(0,0,0,0.12);
+      cursor: default;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .dot-red    { background: #FF5F57; }
+    .dot-yellow { background: #FFBD2E; }
+    .dot-green  { background: #28C840; }
+
+    .window-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--label);
+      letter-spacing: -0.01em;
+      pointer-events: none;
+    }
+
+    .toolbar-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .tb-btn {
+      width: 28px; height: 28px;
+      border-radius: var(--r);
+      background: transparent;
+      border: none;
+      color: var(--label-2);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.08s;
+    }
+    .tb-btn:hover { background: rgba(0,0,0,0.07); color: var(--label); }
+    .tb-btn:active { background: rgba(0,0,0,0.12); }
+
+    /* Search pill in toolbar */
+    .search-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,0,0,0.07);
+      border: 0.5px solid var(--sep);
+      border-radius: 7px;
+      padding: 4px 10px;
+      width: 200px;
+      margin-left: 8px;
+    }
+    .search-pill input {
+      background: transparent; border: none; outline: none;
+      font-family: var(--font);
+      font-size: 12px; color: var(--label);
+      width: 100%;
+    }
+    .search-pill input::placeholder { color: var(--label-3); }
+
+    /* ── App body ───────────────────────────────────────────────── */
+    .app { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ────────────────────────────────────────────────── */
+    .sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: var(--sidebar-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-right: 0.5px solid var(--sep);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+
+    .sb-section-label {
+      padding: 10px 16px 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--label-3);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .sb-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 12px 6px 14px;
+      border-radius: var(--r-md);
+      margin: 1px 6px;
+      cursor: pointer;
+      transition: background 0.08s;
+      position: relative;
+    }
+    .sb-row:hover { background: var(--hover-bg); }
+    .sb-row.on {
+      background: var(--selected-bg);
+      color: var(--label-on-sel);
+    }
+    .sb-row .ico { flex-shrink: 0; }
+    .sb-row .ico svg { display: block; }
+
+    .sb-label-text {
+      font-size: 13px;
+      font-weight: 400;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sb-row.on .sb-label-text { font-weight: 600; }
+
+    .sb-count {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--label-3);
+      background: rgba(0,0,0,0.08);
+      border-radius: 10px;
+      padding: 1px 7px;
+      min-width: 22px;
+      text-align: center;
+    }
+    .sb-row.on .sb-count {
+      background: rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.9);
+    }
+    .sb-count.alert {
+      background: var(--sys-red);
+      color: white;
+      font-weight: 600;
+    }
+    .sb-row.on .sb-count.alert {
+      background: white;
+      color: var(--sys-red);
+    }
+
+    .sb-divider { height: 0.5px; background: var(--sep); margin: 6px 16px; }
+
+    /* ── Content area ───────────────────────────────────────────── */
+    .content-area { flex: 1; display: flex; overflow: hidden; }
+
+    /* ── List pane ──────────────────────────────────────────────── */
+    .list-pane {
+      width: 310px;
+      min-width: 310px;
+      background: var(--panel-bg);
+      border-right: 0.5px solid var(--sep);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .list-header {
+      padding: 12px 16px 10px;
+      border-bottom: 0.5px solid var(--sep);
+      flex-shrink: 0;
+    }
+    .list-header-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .list-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--label);
+      letter-spacing: -0.02em;
+      font-family: var(--font-display);
+    }
+    .list-count {
+      margin-left: 8px;
+      font-size: 12px;
+      color: var(--label-3);
+      font-weight: 400;
+    }
+
+    .filter-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+    .fpill {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 500;
+      background: rgba(0,0,0,0.07);
+      color: var(--label-2);
+      border: none;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+    .fpill:hover { background: rgba(0,0,0,0.11); color: var(--label); }
+    .fpill.on {
+      background: var(--sys-blue);
+      color: white;
+    }
+
+    /* ── Event list rows ────────────────────────────────────────── */
+    .list-scroll { flex: 1; overflow-y: auto; }
+
+    .ev-row {
+      padding: 10px 14px 10px 16px;
+      border-bottom: 0.5px solid var(--sep);
+      cursor: pointer;
+      transition: background 0.08s;
+      position: relative;
+    }
+    .ev-row:hover { background: rgba(0,0,0,0.03); }
+    .ev-row.on { background: var(--selected-bg); }
+    .ev-row.on * { color: white !important; }
+    .ev-row.on .ev-severity-dot { border-color: rgba(255,255,255,0.5) !important; }
+
+    .ev-row-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+
+    .ev-severity-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0; border: 0.5px solid transparent;
+    }
+
+    .ev-source {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--label);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ev-time { font-size: 11px; color: var(--label-3); white-space: nowrap; }
+
+    .ev-title-text {
+      font-size: 12.5px;
+      font-weight: 400;
+      color: var(--label);
+      line-height: 1.4;
+      margin-bottom: 3px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .ev-row.on .ev-title-text { font-weight: 500; }
+
+    .ev-preview {
+      font-size: 11.5px;
+      color: var(--label-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ev-tag-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      margin-right: 3px;
+      vertical-align: middle;
+    }
+
+    /* ── Reading pane ───────────────────────────────────────────── */
+    .reading-pane {
+      flex: 1;
+      background: var(--content-bg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .reading-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--label-3);
+    }
+    .reading-empty .ico { opacity: 0.4; }
+    .reading-empty p { font-size: 13px; color: var(--label-3); }
+
+    .reading-content { display: none; flex-direction: column; height: 100%; }
+    .reading-content.on { display: flex; }
+
+    /* Reading toolbar */
+    .reading-toolbar {
+      height: 44px;
+      background: var(--toolbar-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 0.5px solid var(--sep);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .reading-actions { margin-left: auto; display: flex; gap: 4px; }
+    .action-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px;
+      border-radius: var(--r);
+      background: rgba(0,0,0,0.06);
+      border: 0.5px solid var(--sep);
+      font-size: 12px; font-weight: 500;
+      color: var(--label);
+      cursor: pointer;
+      transition: background 0.08s;
+    }
+    .action-btn:hover { background: rgba(0,0,0,0.10); }
+    .action-btn.primary {
+      background: var(--sys-blue);
+      border-color: rgba(0,0,100,0.2);
+      color: white;
+    }
+    .action-btn.primary:hover { background: #0070F0; }
+    .action-btn.destructive {
+      background: rgba(255,59,48,0.09);
+      border-color: rgba(255,59,48,0.2);
+      color: var(--sys-red);
+    }
+
+    /* Reading body */
+    .reading-body { flex: 1; overflow-y: auto; padding: 28px 36px; }
+
+    .reading-tags { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .apple-tag {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 500;
+    }
+
+    .reading-title {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--label);
+      line-height: 1.3;
+      letter-spacing: -0.025em;
+      margin-bottom: 10px;
+    }
+
+    .reading-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 0.5px solid var(--sep);
+    }
+    .meta-chip {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: var(--label-2);
+    }
+
+    /* Sections */
+    .r-section { margin-bottom: 24px; }
+    .r-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--label-3);
+      margin-bottom: 10px;
+    }
+
+    /* Confidence — macOS gauge style */
+    .conf-card {
+      background: var(--panel-bg);
+      border: 0.5px solid var(--sep);
+      border-radius: var(--r-lg);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .conf-ring-wrap { position: relative; width: 60px; height: 60px; flex-shrink: 0; }
+    .conf-ring-wrap svg { transform: rotate(-90deg); }
+    .conf-pct {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700;
+      font-family: -apple-system, monospace;
+    }
+    .conf-info { flex: 1; }
+    .conf-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .conf-desc { font-size: 12.5px; color: var(--label-2); line-height: 1.5; }
+
+    /* Summary */
+    .summary-block {
+      background: rgba(0,122,255,0.05);
+      border: 0.5px solid rgba(0,122,255,0.18);
+      border-radius: var(--r-lg);
+      padding: 14px 16px;
+    }
+    .summary-eyebrow {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--sys-blue); margin-bottom: 6px;
+    }
+    .summary-body { font-size: 13.5px; color: var(--label); line-height: 1.65; }
+    .summary-body b { font-weight: 600; }
+
+    /* Timeline — macOS grouped style */
+    .tl-item {
+      display: flex; gap: 14px; padding: 10px 0;
+      border-bottom: 0.5px solid var(--sep);
+    }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-left { display: flex; flex-direction: column; align-items: center; width: 14px; flex-shrink: 0; }
+    .tl-marker {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 1.5px solid; background: white;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .tl-connector { width: 1px; flex: 1; min-height: 12px; background: var(--sep-strong); margin-top: 3px; }
+    .tl-body-col { flex: 1; }
+    .tl-ts { font-size: 11px; color: var(--label-3); margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+    .tl-txt { font-size: 13px; color: var(--label); line-height: 1.45; }
+    .tl-txt b { font-weight: 600; }
+
+    /* Actor rows — grouped table style */
+    .grouped-table {
+      background: var(--panel-bg);
+      border: 0.5px solid var(--sep);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .gt-row {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 11px 14px;
+      border-bottom: 0.5px solid var(--sep);
+    }
+    .gt-row:last-child { border-bottom: none; }
+    .gt-flag {
+      width: 32px; height: 24px;
+      border-radius: var(--r-sm);
+      background: var(--window-bg);
+      border: 0.5px solid var(--sep-strong);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: var(--label-2);
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .gt-body { flex: 1; }
+    .gt-namerow { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .gt-name { font-size: 13px; font-weight: 600; color: var(--label); }
+    .stance-pill {
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 10.5px; font-weight: 500;
+    }
+    .s-for  { background: rgba(40,205,65,0.12); color: #1A8C2E; }
+    .s-aga  { background: rgba(255,59,48,0.10); color: #C0221A; }
+    .s-neu  { background: rgba(142,142,147,0.15); color: var(--sys-gray); }
+    .s-med  { background: rgba(0,122,255,0.10); color: var(--sys-blue); }
+    .gt-quote { font-size: 12.5px; color: var(--label-2); line-height: 1.5; }
+
+    /* Source rows */
+    .src-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 14px;
+      border-bottom: 0.5px solid var(--sep);
+    }
+    .src-row:last-child { border-bottom: none; }
+    .src-name { font-size: 13px; color: var(--label); flex: 1; }
+    .src-track { width: 70px; height: 4px; background: rgba(0,0,0,0.08); border-radius: 2px; flex-shrink: 0; }
+    .src-fill  { height: 4px; border-radius: 2px; }
+    .src-val   { font-size: 12px; font-variant-numeric: tabular-nums; width: 32px; text-align: right; font-weight: 500; }
+
+    /* Status bar at bottom */
+    .status-bar {
+      height: 22px;
+      background: var(--toolbar-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 0.5px solid var(--sep);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+    .status-item {
+      font-size: 11px;
+      color: var(--label-3);
+      display: flex; align-items: center; gap: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Title bar + window chrome ─────────────────────────────────── -->
+<div class="titlebar">
+  <div class="traffic">
+    <div class="dot dot-red"></div>
+    <div class="dot dot-yellow"></div>
+    <div class="dot dot-green"></div>
+  </div>
+
+  <span class="window-title">Pharos Intelligence</span>
+
+  <div class="toolbar-actions">
+    <button class="tb-btn" title="Sidebar">
+      <i data-lucide="panel-left" style="width:15px;height:15px"></i>
+    </button>
+    <button class="tb-btn" title="Refresh">
+      <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
+    </button>
+    <button class="tb-btn" title="Share">
+      <i data-lucide="share" style="width:14px;height:14px"></i>
+    </button>
+    <button class="tb-btn" title="Compose new watch">
+      <i data-lucide="plus" style="width:16px;height:16px"></i>
+    </button>
+    <div class="search-pill">
+      <i data-lucide="search" style="width:12px;height:12px;color:var(--label-3);flex-shrink:0"></i>
+      <input type="text" placeholder="Search events…" />
+    </div>
+    <button class="tb-btn" title="Settings" style="margin-left:4px">
+      <i data-lucide="settings-2" style="width:15px;height:15px"></i>
+    </button>
+  </div>
+</div>
+
+<!-- ── App ───────────────────────────────────────────────────────── -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-section-label">Monitoring</div>
+
+    <div class="sb-row on" onclick="selectRegion(this)">
+      <span class="ico" style="color:white">
+        <i data-lucide="globe" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Middle East</span>
+      <span class="sb-count alert">41</span>
+    </div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-orange)">
+        <i data-lucide="globe" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Eastern Europe</span>
+      <span class="sb-count">28</span>
+    </div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-teal)">
+        <i data-lucide="globe" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Indo-Pacific</span>
+      <span class="sb-count">17</span>
+    </div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-yellow)">
+        <i data-lucide="globe" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">North Africa</span>
+      <span class="sb-count">9</span>
+    </div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-green)">
+        <i data-lucide="bar-chart-2" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Global Economy</span>
+      <span class="sb-count">7</span>
+    </div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-section-label">Views</div>
+
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-blue)">
+        <i data-lucide="list" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Event Feed</span>
+    </div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-purple)">
+        <i data-lucide="users" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Actor Matrix</span>
+    </div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-orange)">
+        <i data-lucide="clock" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Timeline</span>
+    </div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-teal)">
+        <i data-lucide="share-2" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Source Graph</span>
+    </div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-section-label">Saved</div>
+
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-orange)">
+        <i data-lucide="bookmark" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Gaza Conflict</span>
+    </div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-blue)">
+        <i data-lucide="bookmark" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Ukraine Front</span>
+    </div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-section-label">Outlooks</div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-purple)">
+        <i data-lucide="file-text" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Daily Outlooks</span>
+    </div>
+    <div class="sb-row" onclick="selectRegion(this)">
+      <span class="ico" style="color:var(--sys-blue)">
+        <i data-lucide="microscope" style="width:15px;height:15px"></i>
+      </span>
+      <span class="sb-label-text">Deep Research</span>
+    </div>
+  </aside>
+
+  <!-- CONTENT AREA -->
+  <div class="content-area">
+
+    <!-- LIST PANE -->
+    <div class="list-pane">
+      <div class="list-header">
+        <div class="list-header-row">
+          <div class="list-title">Middle East</div>
+          <div class="list-count">41 events</div>
+        </div>
+        <div class="filter-pills">
+          <button class="fpill on">All</button>
+          <button class="fpill">Military</button>
+          <button class="fpill">Diplomatic</button>
+          <button class="fpill">Intel</button>
+        </div>
+      </div>
+
+      <div class="list-scroll" id="listScroll"></div>
+    </div>
+
+    <!-- READING PANE -->
+    <div class="reading-pane">
+      <div class="reading-empty" id="readingEmpty">
+        <span class="ico">
+          <i data-lucide="inbox" style="width:44px;height:44px"></i>
+        </span>
+        <p>Select an event to read the full brief</p>
+      </div>
+
+      <div class="reading-content" id="readingContent">
+        <div class="reading-toolbar">
+          <span id="rtTitle" style="font-size:13px;font-weight:500;color:var(--label-2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+          <div class="reading-actions" id="readingActions">
+            <button class="action-btn">
+              <i data-lucide="flag" style="width:13px;height:13px"></i>
+              Flag
+            </button>
+            <button class="action-btn destructive">
+              <i data-lucide="archive" style="width:13px;height:13px"></i>
+              Archive
+            </button>
+            <button class="action-btn primary">
+              <i data-lucide="file-plus" style="width:13px;height:13px"></i>
+              Add to Outlook
+            </button>
+          </div>
+        </div>
+        <div class="reading-body" id="readingBody"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Status bar ─────────────────────────────────────────────────── -->
+<div class="status-bar">
+  <div class="status-item">
+    <i data-lucide="radio" style="width:11px;height:11px"></i>
+    Live monitoring
+  </div>
+  <div class="status-item">
+    <i data-lucide="clock" style="width:11px;height:11px"></i>
+    <span id="clock">—</span>
+  </div>
+  <div class="status-item" style="margin-left:auto">
+    <i data-lucide="shield-check" style="width:11px;height:11px;color:var(--sys-green)"></i>
+    14 active sources
+  </div>
+  <div class="status-item">
+    <i data-lucide="circle-alert" style="width:11px;height:11px;color:var(--sys-red)"></i>
+    3 critical unread
+  </div>
+</div>
+
+<script>
+/* ── Data ──────────────────────────────────────────────────────── */
+const events = [
+  {
+    id:1,
+    sevColor:'#FF3B30',
+    tagColor:'#FF3B30', tagLabel:'Critical',
+    tagBg:'rgba(255,59,48,0.10)',
+    src:'IDF Official Statement', time:'02:14',
+    title:'IDF confirms precision strikes on Hamas command infrastructure in Khan Younis',
+    preview:'Three coordinated strike packages executed targeting subterranean command nodes. Civilian corridor reportedly maintained.',
+    loc:'Khan Younis, Gaza Strip', actors:['IDF','Hamas'],
+    conf:0.91, confColor:'#28CD41', confLabel:'High Confidence',
+    confDesc:'Multiple independent sources corroborate. Satellite imagery confirms strike locations and type.',
+    summary:'Israeli forces executed three coordinated strike packages targeting <b>subterranean Hamas command infrastructure</b> in the Khan Younis sector. A civilian corridor to the north was reportedly maintained throughout the operation. Casualty figures remain unconfirmed at time of reporting.',
+    tl:[
+      {t:'01:58 UTC', text:'Israeli Air Force sorties depart from southern bases', c:'#FF9500'},
+      {t:'02:06 UTC', text:'<b>Three strike packages executed</b> — subterranean command nodes targeted', c:'#FF3B30'},
+      {t:'02:14 UTC', text:'IDF Spokesperson confirms; describes as "defensive necessity"', c:'#FF3B30'},
+      {t:'02:21 UTC', text:'Hamas military wing issues rebuttal — civilian claims unverified', c:'#FF9500'},
+      {t:'02:35 UTC', text:'UNRWA field teams report disruption to northern civilian corridor', c:'#8E8E93'},
+    ],
+    adetail:[
+      {flag:'IL', name:'IDF / Israeli Govt', stance:'s-for', sl:'Supporting', quote:'Operations targeted Hamas military infrastructure exclusively. Civilian corridors remain operational.'},
+      {flag:'PS', name:'Hamas Military Wing', stance:'s-aga', sl:'Opposing', quote:'Strikes deliberately targeted civilian areas. Casualty figures to be released within the hour.'},
+      {flag:'UN', name:'UNRWA', stance:'s-neu', sl:'Neutral', quote:'Teams assessing disruption to northern access corridor. Cannot confirm civilian casualty figures.'},
+      {flag:'US', name:'US State Dept', stance:'s-neu', sl:'Neutral', quote:'Monitoring closely. Emphasise obligation to protect civilian populations under international law.'},
+    ],
+    sources:[
+      {name:'IDF Official Statement', rel:0.91, c:'#28CD41'},
+      {name:'Reuters Field Reporter', rel:0.87, c:'#28CD41'},
+      {name:'Satellite Imagery (ISI)', rel:0.94, c:'#28CD41'},
+      {name:'Hamas Media Bureau', rel:0.31, c:'#FF3B30'},
+    ]
+  },
+  {
+    id:2,
+    sevColor:'#007AFF',
+    tagColor:'#007AFF', tagLabel:'Diplomatic',
+    tagBg:'rgba(0,122,255,0.10)',
+    src:'EU Council Press Office', time:'01:58',
+    title:'EU foreign ministers convene emergency session on Gaza humanitarian access',
+    preview:'Emergency consultation scheduled Monday 09:00 UTC. Agenda: humanitarian corridors and sanctions review.',
+    loc:'Brussels, Belgium', actors:['EU','UN'],
+    conf:0.88, confColor:'#28CD41', confLabel:'High Confidence',
+    confDesc:'Official press release corroborated by three European diplomatic correspondents.',
+    summary:'The European Union Council has convened an <b>emergency consultation of foreign ministers</b> scheduled for Monday 09:00 UTC, focusing on humanitarian access corridors and a potential sanctions review.',
+    tl:[
+      {t:'22:30 UTC', text:'Three EU member states formally request emergency consultation', c:'#007AFF'},
+      {t:'00:15 UTC', text:'Council Presidency confirms session at 09:00 UTC Monday', c:'#28CD41'},
+      {t:'01:44 UTC', text:'Agenda leaked: humanitarian access, sanctions review, joint statement', c:'#FF9500'},
+      {t:'01:58 UTC', text:'<b>Official press release issued</b> confirming emergency session', c:'#007AFF'},
+    ],
+    adetail:[
+      {flag:'EU', name:'EU Council President', stance:'s-med', sl:'Mediating', quote:'The humanitarian situation demands urgent collective European response. All options under consideration.'},
+      {flag:'DE', name:'German Foreign Ministry', stance:'s-neu', sl:'Neutral', quote:'Germany supports full compliance with international humanitarian law by all parties.'},
+      {flag:'FR', name:'French MFA', stance:'s-aga', sl:'Opposing', quote:'France is calling for an immediate humanitarian pause to allow aid delivery.'},
+    ],
+    sources:[
+      {name:'EU Council Press Office', rel:0.93, c:'#28CD41'},
+      {name:'Reuters Brussels', rel:0.88, c:'#28CD41'},
+      {name:'Politico Europe', rel:0.78, c:'#FF9500'},
+    ]
+  },
+  {
+    id:3,
+    sevColor:'#FF9500',
+    tagColor:'#FF9500', tagLabel:'Unverified',
+    tagBg:'rgba(255,149,0,0.10)',
+    src:'Multiple Signals', time:'01:41',
+    title:'Back-channel ceasefire negotiations reported via Egyptian intermediaries',
+    preview:'Three corroborating signals. No official confirmation. Treat as unverified intelligence.',
+    loc:'Undisclosed', actors:['Egypt','Hamas','Israel'],
+    conf:0.52, confColor:'#FF9500', confLabel:'Moderate Confidence',
+    confDesc:'Three independent signal categories corroborate. No official confirmation received. Treat as unverified.',
+    summary:'Three independent intelligence signals suggest <b>back-channel negotiations</b> are underway through Egyptian state intermediaries. Signals originate from separate source categories which increases confidence slightly, but no official confirmation has been received.',
+    tl:[
+      {t:'20:15 UTC', text:'First signal: intercept referencing "Cairo channel" in ceasefire context', c:'#FF9500'},
+      {t:'23:40 UTC', text:'Second signal: Egyptian MFA staff observed at ministry (anomalous)', c:'#FF9500'},
+      {t:'01:22 UTC', text:'Third signal: human source reports "movement" in Doha-linked track', c:'#FF9500'},
+      {t:'01:41 UTC', text:'<b>Pattern assessed</b> — moderate confidence of active negotiation', c:'#8E8E93'},
+    ],
+    adetail:[
+      {flag:'EG', name:'Egyptian Intelligence', stance:'s-med', sl:'Mediating', quote:'No official comment. Egypt has historically served as primary ceasefire mediator.'},
+      {flag:'QA', name:'Qatar MFA', stance:'s-neu', sl:'Neutral', quote:'Qatar remains committed to facilitating dialogue between all parties.'},
+    ],
+    sources:[
+      {name:'SIGINT (unverified)', rel:0.48, c:'#FF3B30'},
+      {name:'OSINT Analysis', rel:0.61, c:'#FF9500'},
+      {name:'Human Source (grade C3)', rel:0.55, c:'#FF9500'},
+    ]
+  },
+  {
+    id:4,
+    sevColor:'#FF9500',
+    tagColor:'#AF52DE', tagLabel:'Intelligence',
+    tagBg:'rgba(175,82,222,0.10)',
+    src:'Reuters / AP', time:'01:23',
+    title:'Hezbollah repositions anti-armor units on southern Lebanese border — third movement in 72 hours',
+    preview:'Satellite imagery confirmed. Pattern developing. IDF Northern Command on heightened alert.',
+    loc:'South Lebanon', actors:['Hezbollah','IDF'],
+    conf:0.76, confColor:'#FF9500', confLabel:'Medium Confidence',
+    confDesc:'Satellite imagery confirmed. Pattern analysis suggests preparatory posturing; offensive intent unconfirmed.',
+    summary:'Satellite and field intelligence confirms <b>Hezbollah has repositioned anti-armor units</b> for the third time in 72 hours. The pattern is consistent with defensive posturing but also enhances offensive capability toward northern Israeli settlements.',
+    tl:[
+      {t:'T−72h', text:'First repositioning detected — 1 unit, Khiam sector', c:'#FF9500'},
+      {t:'T−36h', text:'Second repositioning — 2 additional units moved to prepared positions', c:'#FF9500'},
+      {t:'01:05 UTC', text:'<b>Third movement confirmed</b> via satellite — pattern now anomalous', c:'#FF3B30'},
+      {t:'01:23 UTC', text:'IDF Northern Command on heightened alert — official statement pending', c:'#FF3B30'},
+    ],
+    adetail:[
+      {flag:'LB', name:'Hezbollah', stance:'s-aga', sl:'Opposing', quote:'No official statement. Movement assessed as preparatory rather than imminent.'},
+      {flag:'IL', name:'IDF Northern Command', stance:'s-neu', sl:'Neutral', quote:'Monitoring the situation closely. Northern communities on elevated alert.'},
+    ],
+    sources:[
+      {name:'Satellite Imagery (Planet Labs)', rel:0.89, c:'#28CD41'},
+      {name:'Reuters Field Report', rel:0.82, c:'#28CD41'},
+      {name:'AP Wire', rel:0.80, c:'#28CD41'},
+    ]
+  },
+  {
+    id:5,
+    sevColor:'#28CD41',
+    tagColor:'#28CD41', tagLabel:'Confirmed',
+    tagBg:'rgba(40,205,65,0.10)',
+    src:'UN OCHA', time:'00:55',
+    title:'UN Secretary-General demands independent investigation into civilian infrastructure strikes',
+    preview:'Official statement co-signed by UNICEF, WHO, and UNRWA. Highest source reliability.',
+    loc:'New York, USA', actors:['UN','Israel'],
+    conf:0.96, confColor:'#28CD41', confLabel:'Very High Confidence',
+    confDesc:'Official UN press release. Co-signed by UNICEF, WHO, and UNRWA. Highest reliability rating.',
+    summary:'The UN Secretary-General issued a <b>formal condemnation</b> of strikes on civilian infrastructure in Gaza, demanding an independent investigation. Statement co-signed by UNICEF, WHO, and UNRWA field coordinators.',
+    tl:[
+      {t:'00:30 UTC', text:'UNRWA submits internal field report to Secretary-General office', c:'#8E8E93'},
+      {t:'00:55 UTC', text:'<b>Official statement released</b> — condemnation and investigation demand', c:'#28CD41'},
+      {t:'01:10 UTC', text:'Statement co-signed by UNICEF, WHO, UNRWA field coordinators', c:'#8E8E93'},
+    ],
+    adetail:[
+      {flag:'UN', name:'UN Secretary-General', stance:'s-aga', sl:'Opposing', quote:'"No justification for attacks on hospitals, schools, or civilian infrastructure. Immediate investigation required."'},
+      {flag:'IL', name:'Israeli UN Mission', stance:'s-for', sl:'Rebuttal', quote:'Israel categorically rejects these characterizations. All targets were military in nature.'},
+    ],
+    sources:[
+      {name:'UN Official Press Release', rel:0.97, c:'#28CD41'},
+      {name:'UN OCHA Field Reports', rel:0.93, c:'#28CD41'},
+    ]
+  },
+  {
+    id:6,
+    sevColor:'#FF3B30',
+    tagColor:'#FF3B30', tagLabel:'Critical',
+    tagBg:'rgba(255,59,48,0.10)',
+    src:'Multiple Sources', time:'00:12',
+    title:'Artillery exchange at Rafah crossing halts humanitarian convoy — 2 aid workers injured',
+    preview:'14-vehicle convoy blocked. Medical supplies for ~6,000 people on board. Crossing closed indefinitely.',
+    loc:'Rafah, Gaza Strip', actors:['IDF','Hamas','UNRWA'],
+    conf:0.83, confColor:'#28CD41', confLabel:'High Confidence',
+    confDesc:'UNRWA field confirmation plus two independent wire agencies. Artillery origin disputed.',
+    summary:'An artillery exchange at the Rafah crossing has <b>halted a humanitarian convoy</b> carrying medical supplies for ~6,000 people. Two UNRWA workers sustained minor injuries. Crossing closed indefinitely. Second closure in five days.',
+    tl:[
+      {t:'23:55 UTC', text:'Humanitarian convoy (14 vehicles) begins Rafah transit', c:'#8E8E93'},
+      {t:'00:08 UTC', text:'Artillery fire reported — origin disputed', c:'#FF3B30'},
+      {t:'00:12 UTC', text:'<b>Convoy halted</b> — 2 UNRWA workers injured, crossing closed', c:'#FF3B30'},
+      {t:'00:28 UTC', text:'UNRWA confirms closure. ~6,000 people awaiting medical supplies', c:'#FF9500'},
+      {t:'00:44 UTC', text:'IDF denies initiating fire. Hamas blames "Israeli provocation"', c:'#8E8E93'},
+    ],
+    adetail:[
+      {flag:'UN', name:'UNRWA', stance:'s-neu', sl:'Neutral', quote:'"Two staff received minor injuries. Convoy cannot proceed until security situation is resolved."'},
+      {flag:'IL', name:'IDF Spokesperson', stance:'s-neu', sl:'Neutral', quote:'"IDF did not initiate fire at the crossing. Investigating source of reported artillery."'},
+      {flag:'EG', name:'Egyptian Liaison', stance:'s-med', sl:'Mediating', quote:'"Egypt working urgently with all parties to reopen the crossing as quickly as possible."'},
+    ],
+    sources:[
+      {name:'UNRWA Field Report', rel:0.93, c:'#28CD41'},
+      {name:'Reuters On-Ground', rel:0.85, c:'#28CD41'},
+      {name:'IDF Statement', rel:0.88, c:'#28CD41'},
+      {name:'Hamas Media', rel:0.30, c:'#FF3B30'},
+    ]
+  },
+];
+
+/* ── Render list ─────────────────────────────────────────────────── */
+function renderList() {
+  const el = document.getElementById('listScroll');
+  el.innerHTML = '';
+  events.forEach(ev => {
+    const row = document.createElement('div');
+    row.className = 'ev-row';
+    row.dataset.id = ev.id;
+    row.innerHTML = `
+      <div class="ev-row-top">
+        <div class="ev-severity-dot" style="background:${ev.sevColor};border-color:${ev.sevColor}30"></div>
+        <div class="ev-source">${ev.src}</div>
+        <div class="ev-time">${ev.time}</div>
+      </div>
+      <div class="ev-title-text">${ev.title}</div>
+      <div class="ev-preview">
+        <span class="ev-tag-dot" style="background:${ev.tagColor}"></span>${ev.tagLabel} · ${ev.preview}
+      </div>`;
+    row.addEventListener('click', () => openReading(ev.id));
+    el.appendChild(row);
+  });
+  lucide.createIcons();
+}
+
+/* ── Open reading ─────────────────────────────────────────────────── */
+function openReading(id) {
+  const ev = events.find(e => e.id === id);
+  if (!ev) return;
+
+  document.querySelectorAll('.ev-row').forEach(r => r.classList.remove('on'));
+  document.querySelector(`[data-id="${id}"]`).classList.add('on');
+
+  document.getElementById('readingEmpty').style.display = 'none';
+  document.getElementById('readingContent').classList.add('on');
+
+  document.getElementById('rtTitle').textContent = ev.title;
+
+  const pct = Math.round(ev.conf * 100);
+  const r = 24, circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+
+  document.getElementById('readingBody').innerHTML = `
+    <!-- Tags + title -->
+    <div class="reading-tags">
+      <div class="apple-tag" style="background:${ev.tagBg};color:${ev.tagColor}">
+        ${ev.tagLabel}
+      </div>
+      <div class="apple-tag" style="background:rgba(0,122,255,0.08);color:#007AFF">
+        ${ev.actors.join(' · ')}
+      </div>
+    </div>
+
+    <div class="reading-title">${ev.title}</div>
+
+    <div class="reading-meta">
+      <div class="meta-chip">
+        <i data-lucide="map-pin" style="width:13px;height:13px"></i>
+        ${ev.loc}
+      </div>
+      <div class="meta-chip">
+        <i data-lucide="clock" style="width:13px;height:13px"></i>
+        ${ev.time} UTC
+      </div>
+      <div class="meta-chip">
+        <i data-lucide="radio" style="width:13px;height:13px"></i>
+        ${ev.src}
+      </div>
+    </div>
+
+    <!-- Confidence -->
+    <div class="r-section">
+      <div class="r-section-title">Assessment Confidence</div>
+      <div class="conf-card">
+        <div class="conf-ring-wrap">
+          <svg width="60" height="60" viewBox="0 0 60 60">
+            <circle fill="none" stroke="rgba(0,0,0,0.08)" stroke-width="5" cx="30" cy="30" r="${r}"/>
+            <circle fill="none" stroke="${ev.confColor}" stroke-width="5" stroke-linecap="round"
+              cx="30" cy="30" r="${r}"
+              stroke-dasharray="${circ.toFixed(2)}"
+              stroke-dashoffset="${offset.toFixed(2)}"/>
+          </svg>
+          <div class="conf-pct" style="color:${ev.confColor}">${pct}%</div>
+        </div>
+        <div class="conf-info">
+          <div class="conf-title" style="color:${ev.confColor}">${ev.confLabel}</div>
+          <div class="conf-desc">${ev.confDesc}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="r-section">
+      <div class="r-section-title">Situation Summary</div>
+      <div class="summary-block">
+        <div class="summary-eyebrow">Intelligence Brief</div>
+        <div class="summary-body">${ev.summary}</div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="r-section">
+      <div class="r-section-title">How it unfolded</div>
+      <div class="grouped-table" style="padding:2px 4px">
+        ${ev.tl.map((t,i) => `
+          <div class="tl-item">
+            <div class="tl-left">
+              <div class="tl-marker" style="border-color:${t.c}"></div>
+              ${i < ev.tl.length-1 ? '<div class="tl-connector"></div>' : ''}
+            </div>
+            <div class="tl-body-col">
+              <div class="tl-ts">${t.t}</div>
+              <div class="tl-txt">${t.text}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Actors -->
+    <div class="r-section">
+      <div class="r-section-title">Actor Responses</div>
+      <div class="grouped-table">
+        ${ev.adetail.map(a => `
+          <div class="gt-row">
+            <div class="gt-flag">${a.flag}</div>
+            <div class="gt-body">
+              <div class="gt-namerow">
+                <span class="gt-name">${a.name}</span>
+                <span class="stance-pill ${a.stance}">${a.sl}</span>
+              </div>
+              <div class="gt-quote">${a.quote}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Sources -->
+    <div class="r-section" style="padding-bottom:8px">
+      <div class="r-section-title">Source Reliability</div>
+      <div class="grouped-table">
+        ${ev.sources.map(s => `
+          <div class="src-row">
+            <div class="src-name">${s.name}</div>
+            <div class="src-track">
+              <div class="src-fill" style="width:${Math.round(s.rel*100)}%;background:${s.c}"></div>
+            </div>
+            <div class="src-val" style="color:${s.c}">${s.rel.toFixed(2)}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+
+  lucide.createIcons();
+}
+
+/* ── Sidebar click ─────────────────────────────────────────────── */
+function selectRegion(el) {
+  document.querySelectorAll('.sb-row').forEach(r => r.classList.remove('on'));
+  el.classList.add('on');
+}
+
+/* ── Filter pills ──────────────────────────────────────────────── */
+document.querySelectorAll('.fpill').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.fpill').forEach(x => x.classList.remove('on'));
+  b.classList.add('on');
+}));
+
+/* ── Clock ─────────────────────────────────────────────────────── */
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toISOString().replace('T',' ').slice(0,19) + ' UTC';
+}
+tick(); setInterval(tick, 1000);
+
+/* ── Init ───────────────────────────────────────────────────────── */
+renderList();
+openReading(1);
+lucide.createIcons();
+</script>
+</body>
+</html>

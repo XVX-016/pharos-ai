@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharos · Daily Outlook</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --window-bg:   #ECECEC;
+      --toolbar-bg:  rgba(246,246,246,0.93);
+      --sidebar-bg:  rgba(238,238,238,0.90);
+      --content-bg:  #FFFFFF;
+      --panel-bg:    #F8F8F8;
+      --hover-bg:    rgba(0,0,0,0.04);
+
+      --sep:         rgba(0,0,0,0.09);
+      --sep-strong:  rgba(0,0,0,0.14);
+
+      --label:       rgba(0,0,0,0.88);
+      --label-2:     rgba(0,0,0,0.50);
+      --label-3:     rgba(0,0,0,0.28);
+
+      --sys-blue:    #007AFF;
+      --sys-red:     #FF3B30;
+      --sys-green:   #28CD41;
+      --sys-orange:  #FF9500;
+      --sys-purple:  #AF52DE;
+      --sys-gray:    #8E8E93;
+
+      --font:        -apple-system, "SF Pro Text", "Inter", "Helvetica Neue", sans-serif;
+      --font-display:-apple-system, "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
+
+      --r-sm: 4px; --r: 6px; --r-md: 10px; --r-lg: 14px;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; overflow:hidden; }
+
+    body {
+      font-family: var(--font);
+      background: var(--window-bg);
+      color: var(--label);
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      display: flex; flex-direction: column;
+    }
+
+    ::-webkit-scrollbar { width: 7px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 4px; border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.28); background-clip: padding-box; }
+
+    /* ── Titlebar ─────────────────────────────────────────────── */
+    .titlebar {
+      height: 38px; flex-shrink: 0;
+      background: var(--toolbar-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 0.5px solid var(--sep);
+      display: flex; align-items: center;
+      padding: 0 14px; gap: 8px;
+      position: relative;
+    }
+    .traffic { display:flex; gap:7px; align-items:center; }
+    .dot { width:12px; height:12px; border-radius:50%; border:0.5px solid rgba(0,0,0,0.12); }
+    .dot-red    { background:#FF5F57; }
+    .dot-yellow { background:#FFBD2E; }
+    .dot-green  { background:#28C840; }
+    .window-title {
+      position:absolute; left:50%; transform:translateX(-50%);
+      font-size:13px; font-weight:600; color:var(--label);
+      letter-spacing:-0.01em; pointer-events:none;
+      white-space: nowrap;
+    }
+    .tb-right { margin-left:auto; display:flex; align-items:center; gap:4px; }
+    .tb-btn {
+      width:28px; height:28px; border-radius:var(--r);
+      background:transparent; border:none; color:var(--label-2);
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:background .08s;
+    }
+    .tb-btn:hover { background:rgba(0,0,0,0.07); color:var(--label); }
+
+    /* ── Toolbar (nav actions) ────────────────────────────────── */
+    .toolbar {
+      height: 44px; flex-shrink: 0;
+      background: var(--toolbar-bg);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 0.5px solid var(--sep);
+      display: flex; align-items: center;
+      padding: 0 16px; gap: 6px;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 3px;
+      padding: 4px 8px 4px 4px;
+      border-radius: var(--r);
+      border: none; background: transparent;
+      color: var(--sys-blue); cursor: pointer;
+      font-size: 14px; font-weight: 400;
+      transition: background .08s;
+    }
+    .back-btn:hover { background: rgba(0,122,255,0.08); }
+
+    .tb-divider { width: 0.5px; height: 18px; background: var(--sep-strong); margin: 0 4px; }
+
+    .tb-center { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .tb-topic-pill {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+      background: rgba(255,149,0,0.12);
+      color: #B36800;
+    }
+    .tb-date { font-size: 12px; color: var(--label-3); }
+
+    .tb-actions { display: flex; align-items: center; gap: 4px; }
+    .action-btn {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 11px; border-radius: var(--r);
+      font-size: 12.5px; font-weight: 500; color: var(--label);
+      background: rgba(0,0,0,0.06); border: 0.5px solid var(--sep);
+      cursor: pointer; transition: background .08s;
+    }
+    .action-btn:hover { background: rgba(0,0,0,0.10); }
+    .action-btn.primary { background: var(--sys-blue); border-color: transparent; color: white; }
+    .action-btn.primary:hover { background: #0070F0; }
+
+    /* ── Body ─────────────────────────────────────────────────── */
+    .body { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Article column ───────────────────────────────────────── */
+    .article-col {
+      flex: 1;
+      background: var(--content-bg);
+      overflow-y: auto;
+      display: flex; justify-content: center;
+    }
+
+    .article {
+      width: 100%; max-width: 680px;
+      padding: 36px 24px 60px;
+    }
+
+    /* Topic + date row */
+    .article-meta-top {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .topic-tag {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      background: rgba(255,149,0,0.12);
+      color: #B36800;
+      border: 0.5px solid rgba(255,149,0,0.2);
+    }
+    .conf-tag {
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+      background: rgba(40,205,65,0.10);
+      color: #1A8C2E;
+      border: 0.5px solid rgba(40,205,65,0.2);
+    }
+
+    /* Title */
+    .article-title {
+      font-family: var(--font-display);
+      font-size: 28px; font-weight: 700;
+      color: var(--label);
+      line-height: 1.25;
+      letter-spacing: -0.03em;
+      margin-bottom: 14px;
+    }
+
+    /* Byline row */
+    .byline {
+      display: flex; align-items: center;
+      gap: 14px; flex-wrap: wrap;
+      padding-bottom: 16px;
+      border-bottom: 0.5px solid var(--sep);
+      margin-bottom: 22px;
+    }
+    .byline-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: var(--label-2);
+    }
+    .byline-sep { width: 3px; height: 3px; border-radius: 50%; background: var(--label-3); }
+
+    /* Executive summary callout — Apple News highlight block */
+    .exec-summary {
+      background: rgba(0,122,255,0.05);
+      border: 0.5px solid rgba(0,122,255,0.18);
+      border-left: 3px solid var(--sys-blue);
+      border-radius: 0 var(--r-md) var(--r-md) 0;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+    }
+    .exec-label {
+      font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--sys-blue); margin-bottom: 7px;
+    }
+    .exec-text {
+      font-size: 14.5px; color: var(--label); line-height: 1.65;
+      font-weight: 400;
+    }
+    .exec-text b { font-weight: 600; }
+
+    /* Body text */
+    .body-text {
+      font-size: 16px;
+      color: var(--label);
+      line-height: 1.72;
+      margin-bottom: 20px;
+      font-weight: 400;
+    }
+    .body-text b { font-weight: 600; }
+
+    /* Citation link */
+    .cite {
+      color: var(--sys-blue);
+      font-size: 12px;
+      font-weight: 600;
+      vertical-align: super;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .cite:hover { text-decoration: underline; }
+
+    /* Section heading */
+    .section-heading {
+      font-family: var(--font-display);
+      font-size: 20px; font-weight: 700;
+      color: var(--label);
+      letter-spacing: -0.02em;
+      margin: 32px 0 12px;
+    }
+
+    /* Pull quote — Apple News feature */
+    .pull-quote {
+      margin: 28px 0;
+      padding: 4px 0 4px 18px;
+      border-left: 3px solid var(--label-3);
+    }
+    .pull-quote-text {
+      font-family: var(--font-display);
+      font-size: 19px; font-weight: 300;
+      color: var(--label);
+      line-height: 1.5;
+      letter-spacing: -0.015em;
+      font-style: italic;
+    }
+    .pull-quote-attr {
+      font-size: 12px; color: var(--label-3); margin-top: 6px;
+      font-style: normal;
+    }
+
+    /* Key findings — grouped card */
+    .findings-card {
+      background: var(--panel-bg);
+      border: 0.5px solid var(--sep);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      margin: 28px 0;
+    }
+    .findings-header {
+      padding: 12px 16px 10px;
+      border-bottom: 0.5px solid var(--sep);
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--label-2);
+    }
+    .finding-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 0.5px solid var(--sep);
+    }
+    .finding-row:last-child { border-bottom: none; }
+    .finding-num {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--sys-blue); color: white;
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .finding-text { font-size: 13px; color: var(--label); line-height: 1.5; }
+    .finding-text b { font-weight: 600; }
+
+    /* Sources section */
+    .sources-section {
+      margin-top: 36px;
+      padding-top: 24px;
+      border-top: 0.5px solid var(--sep);
+    }
+    .sources-title {
+      font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--label-3); margin-bottom: 14px;
+    }
+    .source-row {
+      display: flex; gap: 10px;
+      padding: 8px 0;
+      border-bottom: 0.5px solid var(--sep);
+      align-items: flex-start;
+    }
+    .source-row:last-child { border-bottom: none; }
+    .source-num {
+      font-size: 11px; font-weight: 600;
+      color: var(--sys-blue); width: 22px;
+      flex-shrink: 0; text-align: right;
+      padding-top: 1px;
+    }
+    .source-info { flex: 1; }
+    .source-title-text {
+      font-size: 13px; color: var(--label); font-weight: 500;
+      margin-bottom: 1px; line-height: 1.4;
+    }
+    .source-url { font-size: 11px; color: var(--sys-blue); }
+    .source-meta { font-size: 11px; color: var(--label-3); }
+    .source-rel {
+      font-size: 11px; font-weight: 600; white-space: nowrap;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ── AI sidebar ───────────────────────────────────────────── */
+    .ai-sidebar {
+      width: 320px; min-width: 320px;
+      background: var(--panel-bg);
+      border-left: 0.5px solid var(--sep);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    .ai-header {
+      padding: 14px 16px 12px;
+      border-bottom: 0.5px solid var(--sep);
+      background: var(--toolbar-bg);
+      backdrop-filter: blur(12px);
+      flex-shrink: 0;
+    }
+    .ai-title-row {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    }
+    .ai-icon {
+      width: 24px; height: 24px; border-radius: var(--r);
+      background: linear-gradient(135deg, var(--sys-purple) 0%, var(--sys-blue) 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ai-title { font-size: 13px; font-weight: 600; color: var(--label); }
+    .ai-sub { font-size: 11.5px; color: var(--label-2); }
+
+    .ai-messages { flex: 1; overflow-y: auto; padding: 14px 14px 8px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* Message bubbles */
+    .msg { display: flex; flex-direction: column; gap: 3px; max-width: 92%; }
+    .msg.ai { align-self: flex-start; }
+    .msg.user { align-self: flex-end; }
+
+    .bubble {
+      padding: 9px 12px;
+      border-radius: 16px;
+      font-size: 13px; line-height: 1.5;
+    }
+    .bubble.ai {
+      background: var(--content-bg);
+      border: 0.5px solid var(--sep);
+      color: var(--label);
+      border-radius: 4px 16px 16px 16px;
+    }
+    .bubble.user {
+      background: var(--sys-blue);
+      color: white;
+      border-radius: 16px 16px 4px 16px;
+    }
+    .msg-time { font-size: 10.5px; color: var(--label-3); padding: 0 4px; }
+    .msg.user .msg-time { align-self: flex-end; }
+
+    /* Suggested questions */
+    .suggestions { padding: 0 14px 8px; display: flex; flex-direction: column; gap: 6px; }
+    .sug-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--label-3); margin-bottom: 2px; }
+    .sug-btn {
+      text-align: left;
+      padding: 8px 12px;
+      border-radius: var(--r-md);
+      background: var(--content-bg); border: 0.5px solid var(--sep);
+      font-size: 12.5px; color: var(--sys-blue);
+      cursor: pointer; transition: background .08s;
+      font-family: var(--font);
+    }
+    .sug-btn:hover { background: rgba(0,122,255,0.05); border-color: rgba(0,122,255,0.2); }
+
+    /* Input */
+    .ai-input-wrap {
+      padding: 10px 12px;
+      border-top: 0.5px solid var(--sep);
+      background: var(--content-bg);
+      display: flex; align-items: flex-end; gap: 8px;
+      flex-shrink: 0;
+    }
+    .ai-input {
+      flex: 1;
+      background: var(--panel-bg);
+      border: 0.5px solid var(--sep-strong);
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-family: var(--font); font-size: 13px;
+      color: var(--label); outline: none; resize: none;
+      max-height: 100px; line-height: 1.4;
+    }
+    .ai-input::placeholder { color: var(--label-3); }
+    .ai-send {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--sys-blue); border: none;
+      color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background .08s;
+    }
+    .ai-send:hover { background: #0070F0; }
+
+    /* ── Status bar ───────────────────────────────────────────── */
+    .status-bar {
+      height: 22px; flex-shrink: 0;
+      background: var(--toolbar-bg);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-top: 0.5px solid var(--sep);
+      display: flex; align-items: center;
+      padding: 0 14px; gap: 16px;
+    }
+    .status-item { font-size: 11px; color: var(--label-3); display:flex; align-items:center; gap:4px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Titlebar ──────────────────────────────────────────────────── -->
+<div class="titlebar">
+  <div class="traffic">
+    <div class="dot dot-red"></div>
+    <div class="dot dot-yellow"></div>
+    <div class="dot dot-green"></div>
+  </div>
+  <span class="window-title">Middle East · Daily Outlook</span>
+  <div class="tb-right">
+    <button class="tb-btn"><i data-lucide="sidebar" style="width:15px;height:15px"></i></button>
+  </div>
+</div>
+
+<!-- ── Toolbar ───────────────────────────────────────────────────── -->
+<div class="toolbar">
+  <button class="back-btn">
+    <i data-lucide="chevron-left" style="width:18px;height:18px"></i>
+    Outlooks
+  </button>
+
+  <div class="tb-divider"></div>
+
+  <div class="tb-center">
+    <div class="tb-topic-pill">
+      <i data-lucide="globe" style="width:12px;height:12px"></i>
+      Middle East
+    </div>
+    <span class="tb-date">Saturday, February 28, 2026</span>
+  </div>
+
+  <div class="tb-actions">
+    <button class="action-btn">
+      <i data-lucide="calendar" style="width:13px;height:13px"></i>
+      Calendar
+    </button>
+    <button class="action-btn">
+      <i data-lucide="share" style="width:13px;height:13px"></i>
+      Share
+    </button>
+    <button class="action-btn">
+      <i data-lucide="bookmark" style="width:13px;height:13px"></i>
+      Save
+    </button>
+    <button class="action-btn primary">
+      <i data-lucide="volume-2" style="width:13px;height:13px"></i>
+      Read Aloud
+    </button>
+  </div>
+</div>
+
+<!-- ── Body ─────────────────────────────────────────────────────── -->
+<div class="body">
+
+  <!-- ARTICLE -->
+  <div class="article-col">
+    <div class="article">
+
+      <!-- Meta top -->
+      <div class="article-meta-top">
+        <div class="topic-tag">
+          <i data-lucide="globe" style="width:11px;height:11px"></i>
+          Middle East
+        </div>
+        <div class="conf-tag">0.87 Confidence</div>
+      </div>
+
+      <!-- Title -->
+      <h1 class="article-title">Gaza Conflict Enters Critical Phase as Humanitarian Crisis Deepens and Diplomatic Channels Strain</h1>
+
+      <!-- Byline -->
+      <div class="byline">
+        <div class="byline-item">
+          <i data-lucide="cpu" style="width:12px;height:12px"></i>
+          Pharos AI
+        </div>
+        <div class="byline-sep"></div>
+        <div class="byline-item">
+          <i data-lucide="calendar" style="width:12px;height:12px"></i>
+          28 February 2026
+        </div>
+        <div class="byline-sep"></div>
+        <div class="byline-item">
+          <i data-lucide="clock" style="width:12px;height:12px"></i>
+          8 min read
+        </div>
+        <div class="byline-sep"></div>
+        <div class="byline-item">
+          <i data-lucide="layers" style="width:12px;height:12px"></i>
+          41 sources processed
+        </div>
+      </div>
+
+      <!-- Executive summary -->
+      <div class="exec-summary">
+        <div class="exec-label">Executive Summary</div>
+        <div class="exec-text">
+          The Gaza conflict has entered a <b>critical operational phase</b> characterised by intensified Israeli precision strikes on Hamas command infrastructure, a deteriorating humanitarian corridor situation, and renewed — though unconfirmed — back-channel ceasefire negotiations through Egyptian intermediaries. European diplomatic unity is showing signs of fracture as France breaks from the consensus position. Hezbollah's third repositioning in 72 hours along the southern Lebanese border introduces a meaningful risk of theatre expansion.
+        </div>
+      </div>
+
+      <!-- Body text -->
+      <h2 class="section-heading">Military Situation</h2>
+
+      <p class="body-text">
+        Israeli forces conducted three coordinated strike packages against subterranean Hamas command infrastructure in the Khan Younis sector in the early hours of February 28, confirming a tactical shift toward <b>deep infrastructure targeting</b> rather than surface-level engagements.<a href="#" class="cite">[1]</a> The IDF described the operations as "defensive necessity," citing intelligence assessments that placed active command coordination within the targeted nodes.
+      </p>
+
+      <p class="body-text">
+        Simultaneously, a third Hezbollah repositioning of anti-armor units along the southern Lebanese border was confirmed via satellite imagery — the third such movement within 72 hours.<a href="#" class="cite">[4]</a> Analysts assess the pattern as consistent with <b>preparatory posturing</b>, though it materially enhances offensive strike capability toward northern Israeli settlements. IDF Northern Command has elevated its alert posture in response, though no official statement has been issued.
+      </p>
+
+      <div class="pull-quote">
+        <div class="pull-quote-text">"A third Hezbollah repositioning in 72 hours is not routine. This is either deterrence signalling or preparation. The pattern demands attention regardless of intent."</div>
+        <div class="pull-quote-attr">— Pharos Source Analysis, confidence 0.76</div>
+      </div>
+
+      <h2 class="section-heading">Humanitarian Situation</h2>
+
+      <p class="body-text">
+        The humanitarian situation reached a new inflection point when an artillery exchange at the Rafah crossing halted a 14-vehicle convoy carrying medical supplies for approximately 6,000 civilians.<a href="#" class="cite">[6]</a> Two UNRWA staff members sustained minor injuries. The crossing has been closed indefinitely pending a security assessment — the second closure in five days. <b>UNRWA estimates that 340,000 people in the northern sectors are now dependent on a single functional supply corridor</b>, which itself is operating at reduced capacity.
+      </p>
+
+      <p class="body-text">
+        The UN Secretary-General issued a formal condemnation of strikes on civilian infrastructure, co-signed by UNICEF, WHO, and UNRWA field coordinators — an unusual degree of institutional alignment that signals elevated concern within the UN system.<a href="#" class="cite">[5]</a> The Israeli UN Mission categorically rejected the characterisation.
+      </p>
+
+      <!-- Key findings card -->
+      <div class="findings-card">
+        <div class="findings-header">Key Findings</div>
+        <div class="finding-row">
+          <div class="finding-num">1</div>
+          <div class="finding-text"><b>Theatre expansion risk elevated.</b> Hezbollah's third repositioning in 72h constitutes an anomalous pattern. Probability of direct engagement within 14 days assessed at 28% (↑6% from prior period).</div>
+        </div>
+        <div class="finding-row">
+          <div class="finding-num">2</div>
+          <div class="finding-text"><b>Back-channel ceasefire track active.</b> Three corroborating signals suggest Egyptian-mediated negotiations are underway. Confidence remains moderate at 0.52; no official confirmation.</div>
+        </div>
+        <div class="finding-row">
+          <div class="finding-num">3</div>
+          <div class="finding-text"><b>EU diplomatic unity fracturing.</b> France's unilateral call for a humanitarian pause breaks from the German-led consensus. Emergency session Monday 09:00 UTC will test cohesion.</div>
+        </div>
+        <div class="finding-row">
+          <div class="finding-num">4</div>
+          <div class="finding-text"><b>Humanitarian corridor at critical risk.</b> Rafah closure and UNRWA assessment place 340,000 civilians in the northern sectors at acute supply risk within 72 hours if not reopened.</div>
+        </div>
+      </div>
+
+      <h2 class="section-heading">Diplomatic Landscape</h2>
+
+      <p class="body-text">
+        The European Union's emergency consultation of foreign ministers, scheduled for Monday 09:00 UTC, has been requested by three member states amid growing divergence over the appropriate European response.<a href="#" class="cite">[2]</a> France's MFA has publicly called for an <b>immediate humanitarian pause</b> — a position that diverges from Germany's emphasis on international humanitarian law compliance without specifying operational demands. This split, if unresolved before the session, risks producing a diluted joint statement with minimal operational impact.
+      </p>
+
+      <p class="body-text">
+        Three independent intelligence signals — drawn from signals intelligence, open-source pattern analysis, and a graded human source — suggest that Egyptian state intermediaries have activated a back-channel ceasefire negotiation track, potentially linked to the Doha channel that produced the 2024 temporary agreement.<a href="#" class="cite">[3]</a> No official confirmation has been received. The confidence assessment stands at 0.52, reflecting genuine uncertainty despite multi-source corroboration.
+      </p>
+
+      <!-- Sources -->
+      <div class="sources-section">
+        <div class="sources-title">Sources</div>
+
+        <div class="source-row">
+          <div class="source-num">[1]</div>
+          <div class="source-info">
+            <div class="source-title-text">IDF Spokesperson Unit — Official Statement on Khan Younis Operations</div>
+            <div class="source-url">idf.il/en/statements/2026-02-28</div>
+          </div>
+          <div class="source-rel" style="color:#1A8C2E"><i data-lucide="shield-check" style="width:11px;height:11px"></i>0.91</div>
+        </div>
+
+        <div class="source-row">
+          <div class="source-num">[2]</div>
+          <div class="source-info">
+            <div class="source-title-text">EU Council Press Office — Emergency Consultation Notice</div>
+            <div class="source-url">consilium.europa.eu/press/2026/02/28</div>
+          </div>
+          <div class="source-rel" style="color:#1A8C2E"><i data-lucide="shield-check" style="width:11px;height:11px"></i>0.93</div>
+        </div>
+
+        <div class="source-row">
+          <div class="source-num">[3]</div>
+          <div class="source-info">
+            <div class="source-title-text">OSINT Analysis + SIGINT (unverified) — Cairo Channel Signal Assessment</div>
+            <div class="source-meta">Multi-source · Confidence 0.52 · Treat as unverified</div>
+          </div>
+          <div class="source-rel" style="color:#B36800"><i data-lucide="alert-triangle" style="width:11px;height:11px"></i>0.52</div>
+        </div>
+
+        <div class="source-row">
+          <div class="source-num">[4]</div>
+          <div class="source-info">
+            <div class="source-title-text">Planet Labs Satellite Imagery — Southern Lebanon Unit Movement</div>
+            <div class="source-url">reuters.com/world/middle-east/2026/02/28</div>
+          </div>
+          <div class="source-rel" style="color:#1A8C2E"><i data-lucide="shield-check" style="width:11px;height:11px"></i>0.89</div>
+        </div>
+
+        <div class="source-row">
+          <div class="source-num">[5]</div>
+          <div class="source-info">
+            <div class="source-title-text">UN Secretary-General Official Statement — Civilian Infrastructure</div>
+            <div class="source-url">un.org/sg/statements/2026/02/28</div>
+          </div>
+          <div class="source-rel" style="color:#1A8C2E"><i data-lucide="shield-check" style="width:11px;height:11px"></i>0.97</div>
+        </div>
+
+        <div class="source-row">
+          <div class="source-num">[6]</div>
+          <div class="source-info">
+            <div class="source-title-text">UNRWA Field Report — Rafah Crossing Incident, 00:12 UTC</div>
+            <div class="source-url">unrwa.org/resources/reports/2026/02/28</div>
+          </div>
+          <div class="source-rel" style="color:#1A8C2E"><i data-lucide="shield-check" style="width:11px;height:11px"></i>0.93</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AI SIDEBAR -->
+  <div class="ai-sidebar">
+
+    <div class="ai-header">
+      <div class="ai-title-row">
+        <div class="ai-icon">
+          <i data-lucide="sparkles" style="width:13px;height:13px;color:white"></i>
+        </div>
+        <span class="ai-title">Ask Pharos</span>
+      </div>
+      <div class="ai-sub">Ask anything about this outlook</div>
+    </div>
+
+    <div class="ai-messages" id="aiMessages">
+
+      <div class="msg ai">
+        <div class="bubble ai">I've analysed today's Middle East outlook. What would you like to explore — the military situation, diplomatic developments, or the humanitarian picture?</div>
+        <div class="msg-time">06:12 UTC</div>
+      </div>
+
+      <div class="msg user">
+        <div class="bubble user">How confident are we in the ceasefire negotiations signal?</div>
+        <div class="msg-time">just now</div>
+      </div>
+
+      <div class="msg ai">
+        <div class="bubble ai">Moderate confidence — <b>0.52</b>. Three independent signals corroborate activity: a SIGINT intercept referencing the "Cairo channel," an anomalous late-evening presence of Egyptian MFA staff, and a graded C3 human source reporting "movement" in the Doha-linked track.<br/><br/>The multi-source corroboration is meaningful, but the absence of any official confirmation from Cairo, Tel Aviv, or Hamas keeps this firmly in the unverified category. Treat as a live hypothesis, not an assessed fact.</div>
+        <div class="msg-time">just now</div>
+      </div>
+
+    </div>
+
+    <div class="suggestions" id="suggestions">
+      <div class="sug-label">Suggested Questions</div>
+      <button class="sug-btn" onclick="addQuestion(this)">What is the risk of Hezbollah entering the conflict?</button>
+      <button class="sug-btn" onclick="addQuestion(this)">Summarise the EU position in one paragraph</button>
+      <button class="sug-btn" onclick="addQuestion(this)">Which sources are least reliable in this outlook?</button>
+    </div>
+
+    <div class="ai-input-wrap">
+      <textarea class="ai-input" id="aiInput" placeholder="Ask about this outlook…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+      <button class="ai-send" onclick="sendMsg()">
+        <i data-lucide="arrow-up" style="width:15px;height:15px"></i>
+      </button>
+    </div>
+
+  </div>
+
+</div><!-- /body -->
+
+<!-- ── Status bar ────────────────────────────────────────────────── -->
+<div class="status-bar">
+  <div class="status-item">
+    <i data-lucide="cpu" style="width:11px;height:11px"></i>
+    Generated 06:04 UTC · GPT-4o
+  </div>
+  <div class="status-item">
+    <i data-lucide="layers" style="width:11px;height:11px"></i>
+    862 words · 41 sources
+  </div>
+  <div class="status-item" style="margin-left:auto">
+    <i data-lucide="shield-check" style="width:11px;height:11px;color:var(--sys-green)"></i>
+    Confidence 0.87
+  </div>
+  <div class="status-item">
+    <i data-lucide="clock" style="width:11px;height:11px"></i>
+    <span id="clock">—</span>
+  </div>
+</div>
+
+<script>
+  function addQuestion(btn) {
+    const text = btn.textContent;
+    sendMsgText(text);
+  }
+
+  function sendMsg() {
+    const input = document.getElementById('aiInput');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    input.style.height = 'auto';
+    sendMsgText(text);
+  }
+
+  function sendMsgText(text) {
+    const msgs = document.getElementById('aiMessages');
+
+    const userMsg = document.createElement('div');
+    userMsg.className = 'msg user';
+    userMsg.innerHTML = `<div class="bubble user">${text}</div><div class="msg-time">just now</div>`;
+    msgs.appendChild(userMsg);
+
+    setTimeout(() => {
+      const aiMsg = document.createElement('div');
+      aiMsg.className = 'msg ai';
+      aiMsg.innerHTML = `<div class="bubble ai">Analysing based on today's 41 processed sources. This is a contextual response generated from the current outlook data.</div><div class="msg-time">just now</div>`;
+      msgs.appendChild(aiMsg);
+      msgs.scrollTop = msgs.scrollHeight;
+      lucide.createIcons();
+    }, 800);
+
+    msgs.scrollTop = msgs.scrollHeight;
+    lucide.createIcons();
+  }
+
+  function tick() {
+    document.getElementById('clock').textContent =
+      new Date().toISOString().replace('T',' ').slice(0,19) + ' UTC';
+  }
+  tick(); setInterval(tick, 1000);
+
+  document.querySelectorAll('.fpill').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.fpill').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+  }));
+
+  lucide.createIcons();
+</script>
+</body>
+</html>
