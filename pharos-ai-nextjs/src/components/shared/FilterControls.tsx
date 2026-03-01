@@ -1,4 +1,5 @@
 'use client';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 
 /** Labelled group of filter rows. */
@@ -11,23 +12,28 @@ export function FilterBlock({ label, children }: { label: string; children: Reac
   );
 }
 
-/** Checkbox-style toggle row used in filter rails. */
+/** shadcn Checkbox-based filter row — replaces custom drawn checkbox. */
 export function CheckboxRow({
   label, color, checked, onChange,
 }: { label: string; color: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <button onClick={() => onChange(!checked)} className="row-btn"
-      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 12px' }}>
-      <div style={{
-        width: 11, height: 11, flexShrink: 0,
-        border: `1px solid ${checked ? color : 'var(--bd)'}`,
-        background: checked ? color : 'transparent',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {checked && <div style={{ width: 5, height: 5, background: 'var(--bg-app)' }} />}
-      </div>
+    <label
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '5px 12px', cursor: 'pointer',
+      }}
+    >
+      <Checkbox
+        checked={checked}
+        onCheckedChange={onChange}
+        style={{
+          width: 11, height: 11, flexShrink: 0, borderRadius: 1,
+          borderColor: checked ? color : 'var(--bd)',
+          backgroundColor: checked ? color : 'transparent',
+        }}
+      />
       <span style={{ fontSize: 10, color: checked ? 'var(--t1)' : 'var(--t2)' }}>{label}</span>
-    </button>
+    </label>
   );
 }
 
@@ -48,11 +54,9 @@ export function ToggleRow({
     >
       <span style={{ fontSize: 10, color: checked ? 'var(--t1)' : 'var(--t2)' }}>{label}</span>
       <Switch
-        size="sm"
         checked={checked}
         onCheckedChange={onChange}
         onClick={e => e.stopPropagation()}
-        style={{ '--tw-ring-color': 'var(--blue)' } as React.CSSProperties}
       />
     </div>
   );

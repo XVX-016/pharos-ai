@@ -8,6 +8,7 @@ import { ArcLayer, ScatterplotLayer, TextLayer, PolygonLayer } from '@deck.gl/la
 import { HeatmapLayer } from '@deck.gl/aggregation-layers';
 import Map from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import type { StyleSpecification } from 'maplibre-gl';
 import type { PickingInfo } from '@deck.gl/core';
 import type { MapViewState } from '@deck.gl/core';
 
@@ -27,6 +28,20 @@ import {
 } from '@/data/mapData';
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+
+const SATELLITE_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    esri: {
+      type: 'raster',
+      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: '© Esri, Maxar, Earthstar Geographics',
+    },
+  },
+  layers: [{ id: 'esri-satellite', type: 'raster', source: 'esri' }],
+};
 
 const INITIAL_VIEW_STATE: MapViewState = {
   longitude: 51.0,
@@ -48,8 +63,9 @@ interface LayerVisibility {
 type TooltipObject = StrikeArc | MissileTrack | Target | Asset | ThreatZone | HeatPoint;
 
 export default function IntelMap() {
-  const [viewState, setViewState] = useState<MapViewState>(INITIAL_VIEW_STATE);
-  const [visibility, setVisibility] = useState<LayerVisibility>({
+  const [viewState, setViewState]       = useState<MapViewState>(INITIAL_VIEW_STATE);
+  const [mapStyleMode, setMapStyleMode] = useState<'dark' | 'satellite'>('dark');
+  const [visibility, setVisibility]     = useState<LayerVisibility>({
     strikes: true,
     missiles: true,
     targets: true,
@@ -366,7 +382,7 @@ export default function IntelMap() {
           getTooltip={getTooltip as (info: PickingInfo) => ReturnType<typeof getTooltip>}
           style={{ width: '100%', height: '100%' }}
         >
-          <Map mapStyle={MAP_STYLE} />
+          <Map mapStyle={mapStyleMode === 'dark' ? MAP_STYLE : SATELLITE_STYLE} />
         </DeckGL>
 
         {/* Legend */}
@@ -433,6 +449,39 @@ export default function IntelMap() {
           }}
         >
           {viewState.latitude.toFixed(2)}°N {viewState.longitude.toFixed(2)}°E
+        </div>
+
+        {/* Map style switcher */}
+        <div style={{
+          position: 'absolute',
+          bottom: 60,
+          right: 12,
+          display: 'flex',
+          overflow: 'hidden',
+          border: '1px solid #404854',
+          borderRadius: 2,
+          zIndex: 10,
+        }}>
+          {(['dark', 'satellite'] as const).map((mode, i) => (
+            <button
+              key={mode}
+              onClick={() => setMapStyleMode(mode)}
+              style={{
+                padding: '4px 9px',
+                background: mapStyleMode === mode ? '#2D72D2' : 'rgba(28,33,39,0.92)',
+                border: 'none',
+                borderRight: i === 0 ? '1px solid #404854' : 'none',
+                color: mapStyleMode === mode ? '#fff' : '#8F99A8',
+                fontSize: 8,
+                fontFamily: 'SFMono-Regular, Menlo, monospace',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                cursor: 'pointer',
+              }}
+            >
+              {mode === 'dark' ? 'DARK' : 'SAT'}
+            </button>
+          ))}
         </div>
 
         {/* Open Full Map Button */}
