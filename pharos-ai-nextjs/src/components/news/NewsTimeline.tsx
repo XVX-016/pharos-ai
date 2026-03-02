@@ -45,10 +45,10 @@ const PERSPECTIVE_COLORS: Record<string, string> = {
 // ─── Tier → vertical distance from spine ──────────────────────
 
 const TIER_Y_OFFSET: Record<number, number> = {
-  1: 12,
-  2: 80,
-  3: 160,
-  4: 240,
+  1: 16,
+  2: 90,
+  3: 175,
+  4: 265,
 };
 
 const TIER_LABELS: Record<number, string> = {
@@ -63,9 +63,11 @@ const CARD_W = 260;
 const CARD_GAP = 16;
 const TIME_SLOT_W = CARD_W + CARD_GAP;
 const IMG_H = 100;
-const PADDING_X = 140;
-const SPINE_Y = 500;
-const CANVAS_H = SPINE_Y * 2 + 100;
+const CARD_H_IMG = IMG_H + 90;   // card height with image
+const CARD_H_NO_IMG = 100;       // card height without image
+const PADDING_X = 160;
+const SPINE_Y = 620;              // enough room for T4 cards (265 offset + ~190 card height = 455px above spine)
+const CANVAS_H = SPINE_Y * 2 + 200; // symmetric below
 
 // Zoom
 const MIN_ZOOM = 0.35;
@@ -98,9 +100,10 @@ function proxyImg(url: string): string {
 
 export function NewsTimeline({ feedData }: NewsTimelineProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [focusedArticle, setFocusedArticle] = useState<TimelineArticle | null>(null);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
   const [selectedTiers, setSelectedTiers] = useState<Set<number>>(new Set([1, 2, 3, 4]));
   const viewportRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   // ── Use refs as the single source of truth for transform state.
   // Event handlers read/write refs directly — no stale closures.
@@ -301,6 +304,48 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
     });
   }, [layout, commitTransform]);
 
+  // Saved transform for restoring after defocus
+  const savedTransform = useRef<{ zoom: number; pan: { x: number; y: number } } | null>(null);
+
+  const focusCard = useCallback((article: TimelineArticle, cardX: number, cardTop: number) => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const rect = vp.getBoundingClientRect();
+
+    // Save current transform to restore on blur
+    savedTransform.current = { zoom: zoomRef.current, pan: { ...panRef.current } };
+
+    // Target: zoom to MAX_ZOOM, center card in viewport
+    const TARGET_ZOOM = 1.0;
+    const cardCenterX = cardX + CARD_W / 2;
+    const cardCenterY = cardTop + (article.imageUrl ? CARD_H_IMG : CARD_H_NO_IMG) / 2;
+
+    panRef.current = {
+      x: rect.width / 2 - cardCenterX * TARGET_ZOOM,
+      y: rect.height / 2 - cardCenterY * TARGET_ZOOM,
+    };
+    zoomRef.current = TARGET_ZOOM;
+    commitTransform();
+    setFocusedId(article.id);
+  }, [commitTransform]);
+
+  const defocus = useCallback(() => {
+    if (savedTransform.current) {
+      panRef.current = savedTransform.current.pan;
+      zoomRef.current = savedTransform.current.zoom;
+      savedTransform.current = null;
+      commitTransform();
+    }
+    setFocusedId(null);
+  }, [commitTransform]);
+
+  // Escape key to defocus
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') defocus(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [defocus]);
+
   const toggleTier = useCallback((tier: number) => {
     setSelectedTiers(prev => {
       const next = new Set(prev);
@@ -405,6 +450,7 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
             width: `${layout.totalWidth}px`,
             height: `${CANVAS_H}px`,
             willChange: 'transform',
+            transition: focusedId ? 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
           }}
         >
           {/* ─── Spine ─── */}
@@ -466,8 +512,9 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
           {visibleCards.map(({ article, x, above, yOffset }) => {
             const color = PERSPECTIVE_COLORS[article.feed.perspective] ?? '#6b7280';
             const isHovered = hoveredId === article.id;
+            const isFocused = focusedId === article.id;
             const hasImg = !!article.imageUrl;
-            const cardH = hasImg ? IMG_H + 90 : 100;
+            const cardH = hasImg ? CARD_H_IMG : CARD_H_NO_IMG;
 
             const cardTop = above
               ? SPINE_Y - yOffset - cardH
@@ -488,7 +535,7 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
                     width: '2px',
                     height: `${Math.max(connectorH, 0)}px`,
                     backgroundColor: color,
-                    opacity: isHovered ? 0.8 : 0.3,
+                    opacity: isFocused ? 0.9 : isHovered ? 0.8 : 0.3,
                   }}
                 />
                 {/* Spine dot */}
@@ -497,83 +544,178 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
                   style={{
                     left: `${cardCenter - 5}px`,
                     top: `${SPINE_Y - 5}px`,
-                    width: '10px',
-                    height: '10px',
+                    width: isFocused ? '14px' : '10px',
+                    height: isFocused ? '14px' : '10px',
+                    marginLeft: isFocused ? '-2px' : '0',
+                    marginTop: isFocused ? '-2px' : '0',
                     backgroundColor: color,
-                    opacity: isHovered ? 1 : 0.7,
-                    boxShadow: isHovered ? `0 0 14px ${color}` : 'none',
+                    opacity: isFocused ? 1 : isHovered ? 1 : 0.7,
+                    boxShadow: isFocused ? `0 0 20px ${color}, 0 0 40px ${color}60` : isHovered ? `0 0 14px ${color}` : 'none',
+                    transition: 'all 0.3s ease',
                   }}
                 />
 
-                {/* Card */}
-                <div
-                  className="absolute"
-                  style={{ left: `${x}px`, top: `${cardTop}px`, width: `${CARD_W}px`, cursor: 'pointer' }}
-                  onMouseEnter={() => setHoveredId(article.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  onClick={() => setFocusedArticle(article)}
-                >
+                {/* Card — normal state */}
+                {!isFocused && (
                   <div
-                    className={`rounded-lg border overflow-hidden transition-all duration-150
-                      ${isHovered
-                        ? 'bg-[#1a1a24] border-white/30 shadow-2xl shadow-black/50'
-                        : 'bg-[#111118] border-white/15'
-                      }`}
+                    className="absolute"
+                    style={{ left: `${x}px`, top: `${cardTop}px`, width: `${CARD_W}px`, cursor: 'pointer' }}
+                    onMouseEnter={() => setHoveredId(article.id)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    onClick={() => focusCard(article, x, cardTop)}
                   >
-                    {hasImg && (
-                      <div className="w-full overflow-hidden bg-[#0a0a0f]" style={{ height: `${IMG_H}px` }}>
-                        <img
-                          src={proxyImg(article.imageUrl!)}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                          onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
-                        />
-                      </div>
-                    )}
-                    <div className="px-3 py-2.5">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <div
-                          className="px-1.5 py-0.5 rounded text-[8px] mono font-bold leading-none"
-                          style={{ backgroundColor: `${color}30`, color, border: `1px solid ${color}50` }}
-                        >
-                          {article.feed.name.length > 14 ? article.feed.id.toUpperCase() : article.feed.name.toUpperCase()}
+                    <div
+                      className={`rounded-lg border overflow-hidden transition-all duration-150
+                        ${isHovered
+                          ? 'bg-[#1a1a24] border-white/30 shadow-2xl shadow-black/50'
+                          : 'bg-[#111118] border-white/15'
+                        }`}
+                    >
+                      {hasImg && (
+                        <div className="w-full overflow-hidden bg-[#0a0a0f]" style={{ height: `${IMG_H}px` }}>
+                          <img
+                            src={proxyImg(article.imageUrl!)}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+                          />
                         </div>
-                        {article.feed.stateFunded && (
-                          <span className="text-[8px] mono font-bold text-amber-400 tracking-wider">STATE</span>
-                        )}
-                        <span className="mono text-[11px] font-bold text-white ml-auto shrink-0">
-                          {formatHour(article.time)}
-                        </span>
-                        <span className="mono text-[9px] text-white/70 shrink-0">
-                          {formatTimeAgo(article.time)}
-                        </span>
-                      </div>
-                      <h4 className="text-[12px] text-white font-semibold leading-snug line-clamp-2">
-                        {article.title}
-                      </h4>
-                      {article.snippet && (
-                        <p className="text-[10px] text-white/70 mt-1 leading-relaxed line-clamp-2">
-                          {article.snippet}
-                        </p>
                       )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[9px] mono font-bold text-white/60">{article.feed.country}</span>
-                        <div className="flex gap-0.5">
-                          {Array.from({ length: 5 - article.feed.tier }).map((_, i) => (
-                            <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-                          ))}
-                          {Array.from({ length: article.feed.tier - 1 }).map((_, i) => (
-                            <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                          ))}
+                      <div className="px-3 py-2.5">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <div
+                            className="px-1.5 py-0.5 rounded text-[8px] mono font-bold leading-none"
+                            style={{ backgroundColor: `${color}30`, color, border: `1px solid ${color}50` }}
+                          >
+                            {article.feed.name.length > 14 ? article.feed.id.toUpperCase() : article.feed.name.toUpperCase()}
+                          </div>
+                          {article.feed.stateFunded && (
+                            <span className="text-[8px] mono font-bold text-amber-400 tracking-wider">STATE</span>
+                          )}
+                          <span className="mono text-[11px] font-bold text-white ml-auto shrink-0">
+                            {formatHour(article.time)}
+                          </span>
+                          <span className="mono text-[9px] text-white/70 shrink-0">
+                            {formatTimeAgo(article.time)}
+                          </span>
                         </div>
-                        {isHovered && (
-                          <span className="ml-auto text-[8px] mono text-white/40">click to expand</span>
+                        <h4 className="text-[12px] text-white font-semibold leading-snug line-clamp-2">
+                          {article.title}
+                        </h4>
+                        {article.snippet && (
+                          <p className="text-[10px] text-white/70 mt-1 leading-relaxed line-clamp-2">
+                            {article.snippet}
+                          </p>
                         )}
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-[9px] mono font-bold text-white/60">{article.feed.country}</span>
+                          <div className="flex gap-0.5">
+                            {Array.from({ length: 5 - article.feed.tier }).map((_, i) => (
+                              <div key={i} className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+                            ))}
+                            {Array.from({ length: article.feed.tier - 1 }).map((_, i) => (
+                              <div key={i} className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                            ))}
+                          </div>
+                          {isHovered && (
+                            <span className="ml-auto text-[8px] mono text-white/40">click to expand</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Card — focused/expanded state */}
+                {isFocused && (() => {
+                  const EXP_W = CARD_W + 160;
+                  // Center expanded card on the normal card, but clamp to stay in canvas
+                  const expLeft = Math.max(20, x - 80);
+                  // For above-spine cards: anchor bottom to cardTop+cardH (so it grows upward from card bottom edge)
+                  // For below-spine cards: anchor top to cardTop (grows downward)
+                  const expTop = Math.max(20, cardTop - 40);
+                  return (
+                  <div
+                    className="absolute"
+                    style={{
+                      left: `${expLeft}px`,
+                      top: `${expTop}px`,
+                      width: `${EXP_W}px`,
+                      zIndex: 100,
+                    }}
+                  >
+                    <div
+                      className="rounded-xl border overflow-hidden"
+                      style={{
+                        backgroundColor: '#0e0e1a',
+                        borderColor: `${color}50`,
+                        boxShadow: `0 0 0 1px ${color}20, 0 40px 80px rgba(0,0,0,0.8)`,
+                      }}
+                    >
+                      {hasImg && (
+                        <div className="w-full overflow-hidden bg-[#0a0a0f]" style={{ height: '180px' }}>
+                          <img
+                            src={proxyImg(article.imageUrl!)}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+                          />
+                        </div>
+                      )}
+                      <div className="px-5 py-4">
+                        {/* Source row */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <div
+                            className="px-2 py-1 rounded text-[9px] mono font-bold"
+                            style={{ backgroundColor: `${color}25`, color, border: `1px solid ${color}40` }}
+                          >
+                            {article.feed.name.toUpperCase()}
+                          </div>
+                          {article.feed.stateFunded && (
+                            <span className="text-[9px] mono font-bold text-amber-400">STATE FUNDED</span>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); defocus(); }}
+                            className="ml-auto text-white/40 hover:text-white text-[20px] leading-none transition-colors"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        {/* Time */}
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <span className="mono text-[13px] font-bold text-white">
+                            {article.time.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                          </span>
+                          <span className="mono text-[13px] font-bold text-white">{formatHour(article.time)}</span>
+                          <span className="mono text-[11px] text-white/50">{formatTimeAgo(article.time)}</span>
+                        </div>
+                        {/* Title */}
+                        <h3 className="text-[16px] font-bold text-white leading-snug mb-2">
+                          {article.title}
+                        </h3>
+                        {/* Snippet */}
+                        {article.snippet && (
+                          <p className="text-[12px] text-white/75 leading-relaxed mb-4">
+                            {article.snippet}
+                          </p>
+                        )}
+                        {/* Open link */}
+                        <a
+                          href={article.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg no-underline font-bold mono text-[10px] tracking-wider transition-opacity hover:opacity-80"
+                          style={{ backgroundColor: color, color: '#000' }}
+                        >
+                          OPEN ARTICLE →
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  );
+                })()}
               </div>
             );
           })}
@@ -590,118 +732,14 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
           {zoomPct}% · scroll to zoom · drag to pan
         </div>
 
-        {/* ─── Focus panel ─── */}
-        {focusedArticle && (() => {
-          const a = focusedArticle;
-          const color = PERSPECTIVE_COLORS[a.feed.perspective] ?? '#6b7280';
-          return (
-            <>
-              {/* Backdrop */}
-              <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                onClick={() => setFocusedArticle(null)}
-              />
-              {/* Panel — slides in from right */}
-              <div
-                className="absolute top-0 right-0 bottom-0 w-[420px] bg-[#0e0e16] border-l border-white/10 flex flex-col overflow-hidden"
-                style={{ boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
-              >
-                {/* Panel header */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="px-2 py-1 rounded text-[8px] mono font-bold"
-                      style={{ backgroundColor: `${color}25`, color, border: `1px solid ${color}40` }}
-                    >
-                      {a.feed.name.toUpperCase()}
-                    </div>
-                    {a.feed.stateFunded && (
-                      <span className="text-[8px] mono font-bold text-amber-400">STATE FUNDED</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setFocusedArticle(null)}
-                    className="text-white/40 hover:text-white transition-colors text-[18px] leading-none"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                {/* Scrollable content */}
-                <div className="flex-1 overflow-y-auto">
-                  {/* Image */}
-                  {a.imageUrl && (
-                    <div className="w-full h-[220px] overflow-hidden bg-[#0a0a0f] shrink-0">
-                      <img
-                        src={proxyImg(a.imageUrl)}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
-                      />
-                    </div>
-                  )}
-
-                  <div className="px-5 py-4">
-                    {/* Timestamp */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="mono text-[13px] font-bold text-white">
-                        {a.time.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </span>
-                      <span className="mono text-[13px] font-bold text-white">
-                        {formatHour(a.time)}
-                      </span>
-                      <span className="mono text-[11px] text-white/50">
-                        {formatTimeAgo(a.time)}
-                      </span>
-                    </div>
-
-                    {/* Title */}
-                    <h2 className="text-[17px] font-bold text-white leading-snug mb-3">
-                      {a.title}
-                    </h2>
-
-                    {/* Snippet */}
-                    {a.snippet && (
-                      <p className="text-[13px] text-white/75 leading-relaxed mb-4">
-                        {a.snippet}
-                      </p>
-                    )}
-
-                    {/* Metadata grid */}
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      {[
-                        { label: 'SOURCE', value: a.feed.name },
-                        { label: 'COUNTRY', value: a.feed.country },
-                        { label: 'PERSPECTIVE', value: a.feed.perspective.replace('_', ' ') },
-                        { label: 'TIER', value: `T${a.feed.tier} — ${TIER_LABELS[a.feed.tier]}` },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="bg-white/[0.04] rounded px-3 py-2 border border-white/[0.06]">
-                          <div className="mono text-[8px] text-white/40 tracking-wider mb-0.5">{label}</div>
-                          <div className="text-[11px] text-white font-medium">{value}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Open article button */}
-                    <a
-                      href={a.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border no-underline transition-colors"
-                      style={{
-                        backgroundColor: `${color}15`,
-                        borderColor: `${color}40`,
-                        color,
-                      }}
-                    >
-                      <span className="mono text-[10px] font-bold tracking-wider">OPEN ARTICLE →</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </>
-          );
-        })()}
+        {/* Dim backdrop when something is focused — click to defocus */}
+        {focusedId && (
+          <div
+            className="absolute inset-0"
+            style={{ background: 'rgba(0,0,0,0.35)' }}
+            onClick={defocus}
+          />
+        )}
       </div>
     </div>
   );
