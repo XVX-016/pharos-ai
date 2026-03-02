@@ -254,4 +254,7 @@
 
   /* No-underline links */
   .no-underline { text-decoration: none; color: inherit; }
+
+  /* Hide map attribution */
+  .maplibregl-ctrl-attrib { display: none !important; }
 }
