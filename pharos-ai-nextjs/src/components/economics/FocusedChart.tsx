@@ -6,9 +6,20 @@ import type { EconomicIndex } from '@/data/economicIndexes';
 import type { MarketResult } from '@/app/api/markets/route';
 import { ECON_CATEGORY_MAP } from '@/data/economicIndexes';
 
+const RANGES = [
+  { key: '1d',  label: '1D',  interval: '5m'  },
+  { key: '5d',  label: '5D',  interval: '15m' },
+  { key: '1mo', label: '1M',  interval: '1h'  },
+  { key: '3mo', label: '3M',  interval: '1d'  },
+  { key: '6mo', label: '6M',  interval: '1d'  },
+  { key: '1y',  label: '1Y',  interval: '1wk' },
+  { key: '5y',  label: '5Y',  interval: '1mo' },
+] as const;
+
 interface FocusedChartProps {
   index: EconomicIndex;
-  data: MarketResult;
+  data: MarketResult;        // initial data (from page's current range)
+  initialRangeKey?: string;  // which range the page is currently on
   onClose: () => void;
 }
 
@@ -21,7 +32,7 @@ function fmtPct(v: number): string {
   return `${v >= 0 ? '+' : ''}${v.toFixed(3)}%`;
 }
 
-export function FocusedChart({ index, data, onClose }: FocusedChartProps) {
+export function FocusedChart({ index, data: initialData, initialRangeKey = '5d', onClose }: FocusedChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -30,12 +41,18 @@ export function FocusedChart({ index, data, onClose }: FocusedChartProps) {
   const [open, setOpen] = useState(false);
   const [anchorPrice, setAnchorPrice] = useState<number | null>(null);
   const [crosshairValue, setCrosshairValue] = useState<{ price: number; time: number } | null>(null);
-  const [anchorMode, setAnchorMode] = useState(false); // true = next click sets anchor
+  const [anchorMode, setAnchorMode] = useState(false);
+
+  // Own range state — starts on whatever the page is showing
+  const initialIdx = RANGES.findIndex(r => r.key === initialRangeKey);
+  const [rangeIdx, setRangeIdx] = useState(initialIdx >= 0 ? initialIdx : 1);
+  const [data, setData] = useState<MarketResult>(initialData);
+  const [fetching, setFetching] = useState(false);
 
   const cat = ECON_CATEGORY_MAP[index.category];
   const positive = data.changePct >= 0;
 
-  // Compute stats from chart data
+  // Compute stats from current chart data
   const prices = data.chart.map(p => p.value).filter(Boolean);
   const periodHigh = prices.length ? Math.max(...prices) : data.price;
   const periodLow  = prices.length ? Math.min(...prices) : data.price;
@@ -61,8 +78,34 @@ export function FocusedChart({ index, data, onClose }: FocusedChartProps) {
 
   const handleClose = useCallback(() => {
     setOpen(false);
-    setTimeout(onClose, 280); // wait for close animation
+    setTimeout(onClose, 280);
   }, [onClose]);
+
+  // Fetch data for the selected range
+  const fetchRange = useCallback(async (idx: number) => {
+    const r = RANGES[idx];
+    setFetching(true);
+    // Clear anchor when range changes
+    setAnchorPrice(null);
+    setAnchorMode(false);
+    try {
+      const res = await fetch(
+        `/api/markets?tickers=${encodeURIComponent(index.ticker)}&range=${r.key}&interval=${r.interval}`,
+      );
+      const json = await res.json();
+      const result: MarketResult = json.results?.[0];
+      if (result && !result.error) setData(result);
+    } catch {}
+    finally { setFetching(false); }
+  }, [index.ticker]);
+
+  // When range tab changes, fetch fresh data
+  useEffect(() => {
+    // Skip initial mount — we already have initialData
+    if (rangeIdx === (RANGES.findIndex(r => r.key === initialRangeKey) >= 0 ? RANGES.findIndex(r => r.key === initialRangeKey) : 1)) return;
+    fetchRange(rangeIdx);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rangeIdx]);
 
   // Build the chart
   useEffect(() => {
@@ -249,8 +292,29 @@ export function FocusedChart({ index, data, onClose }: FocusedChartProps) {
             {cat.label}
           </span>
 
+          {/* Range selector */}
+          <div className="ml-auto flex items-center gap-1 mr-4">
+            {RANGES.map((r, i) => (
+              <button
+                key={r.key}
+                onClick={() => setRangeIdx(i)}
+                disabled={fetching}
+                className={`px-2 py-1 rounded text-[9px] mono font-bold tracking-wider transition-all disabled:opacity-40 ${
+                  i === rangeIdx
+                    ? 'bg-white/12 text-white border border-white/25'
+                    : 'text-[var(--t4)] hover:text-[var(--t2)] border border-transparent hover:bg-white/5'
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+            {fetching && (
+              <div className="w-3.5 h-3.5 border-[1.5px] border-white/10 border-t-white/50 rounded-full animate-spin ml-1" />
+            )}
+          </div>
+
           {/* Price */}
-          <div className="ml-auto flex items-center gap-4">
+          <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="mono text-[20px] font-bold text-[var(--t1)] leading-none">
                 {fmtPrice(data.price, index.unit)}

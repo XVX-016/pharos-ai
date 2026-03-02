@@ -221,6 +221,7 @@ export default function EconomicsPage() {
           <FocusedChart
             index={idx}
             data={d}
+            initialRangeKey={RANGES[rangeIdx].key}
             onClose={() => setFocusedId(null)}
           />
         );
