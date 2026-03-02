@@ -818,6 +818,48 @@ export const X_POSTS: XPost[] = [
     eventId: 'evt-033',
     pharosNote: '✅ Official IAEA statement at Board of Governors. The "evacuate areas as large or larger than major cities" language is unprecedented from the IAEA. The specific mention of UAE\'s 4 Barakah reactors is significant — if conflict reaches UAE energy infrastructure, a Chernobyl-scale event is theoretically possible. Grossi still has no contact with Iranian nuclear authorities.',
   },
+
+  // ── 40. CENTCOM — Friendly fire: 3 F-15s shot down by Kuwait ─────────────
+  {
+    id: 'xi-040',
+    handle: '@CENTCOM',
+    displayName: 'US Central Command',
+    avatar: 'CC',
+    avatarColor: '#1a56db',
+    verified: true,
+    accountType: 'military',
+    significance: 'BREAKING',
+    timestamp: '2026-03-02T11:18:00Z',
+    content: 'Three U.S. F-15s involved in friendly fire incident in Kuwait — all pilots safe.\n\nDuring active combat — that included attacks from Iranian aircraft, ballistic missiles, and drones — the U.S. Air Force fighter jets were mistakenly shot down by Kuwaiti air defenses.\n\nAll six aircrew ejected safely, have been safely recovered and are in stable condition.\n\nThe circumstances surrounding the incident remain under investigation.',
+    likes: 534000,
+    retweets: 312000,
+    replies: 189000,
+    views: 38900000,
+    eventId: 'evt-030',
+    actorId: 'us',
+    pharosNote: '✅ Official CENTCOM statement with link to centcom.mil press release. Friendly fire — Kuwaiti air defenses shot down 3 US F-15s during chaos of Iranian attack. Most significant friendly fire incident since 2003. The fog of war in a multi-axis missile/drone/aircraft environment made IFF identification impossible for Kuwaiti operators. $200M+ in aircraft lost but all 6 crew survived.',
+  },
+
+  // ── 41. US + Gulf states joint statement ────────────────────────────────
+  {
+    id: 'xi-041',
+    handle: '@StateDept',
+    displayName: 'US Department of State',
+    avatar: 'SD',
+    avatarColor: '#1a56db',
+    verified: true,
+    accountType: 'government',
+    significance: 'HIGH',
+    timestamp: '2026-03-02T11:00:00Z',
+    content: 'Joint Statement by the United States, Kuwait, Saudi Arabia, Bahrain, Qatar, Jordan, and the United Arab Emirates:\n\n"Iran\'s actions represent a dangerous escalation that violates the sovereignty of multiple states and threatens regional stability."\n\n"Targeting civilians and non-combatant states is reckless behavior that undermines stability."\n\n"We stand united in defense of our citizens, our sovereignty, and our territories, and we reaffirm our right to self-defense."\n\nFull statement: state.gov/joint-statement-iran',
+    likes: 156000,
+    retweets: 89000,
+    replies: 34000,
+    views: 9400000,
+    eventId: 'evt-036',
+    actorId: 'us',
+    pharosNote: '✅ Official State Department post. Broadest US-Gulf coalition statement since 1991 Gulf War. Notable: Qatar signing — historically closer to Iran — and Jordan (not a Gulf state but included). The "commending effective cooperation in air and missile defense" line is the diplomatic way of saying coalition air defense integration is working.',
+  },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
