@@ -11,19 +11,15 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type { PickingInfo } from '@deck.gl/core';
 import type { MapViewState } from '@deck.gl/core';
 
-import {
-  STRIKE_ARCS,
-  MISSILE_TRACKS,
-  TARGETS,
-  ALLIED_ASSETS,
-  THREAT_ZONES,
-  HEAT_POINTS,
-  type StrikeArc,
-  type MissileTrack,
-  type Target,
-  type Asset,
-  type ThreatZone,
-  type HeatPoint,
+import { useMapData } from '@/api/map';
+
+import type {
+  StrikeArc,
+  MissileTrack,
+  Target,
+  Asset,
+  ThreatZone,
+  HeatPoint,
 } from '@/data/mapData';
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
@@ -48,6 +44,7 @@ interface LayerVisibility {
 type TooltipObject = StrikeArc | MissileTrack | Target | Asset | ThreatZone | HeatPoint;
 
 export default function IntelMap() {
+  const { data: mapData } = useMapData();
   const [viewState, setViewState] = useState<MapViewState>(INITIAL_VIEW_STATE);
   const [visibility, setVisibility] = useState<LayerVisibility>({
     strikes: true,
@@ -62,11 +59,18 @@ export default function IntelMap() {
     setVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const strikes   = mapData?.strikes ?? [];
+  const missiles  = mapData?.missiles ?? [];
+  const targets   = mapData?.targets ?? [];
+  const assets    = mapData?.assets ?? [];
+  const zones     = mapData?.threatZones ?? [];
+  const heatPts   = mapData?.heatPoints ?? [];
+
   const layers = useMemo(() => [
-    visibility.heat &&
+    visibility.heat && heatPts.length > 0 &&
       new HeatmapLayer<HeatPoint>({
         id: 'heat',
-        data: HEAT_POINTS,
+        data: heatPts,
         getPosition: (d: HeatPoint): [number, number] => d.position,
         getWeight: (d: HeatPoint): number => d.weight,
         radiusPixels: 60,
@@ -81,10 +85,10 @@ export default function IntelMap() {
         ],
       }),
 
-    visibility.zones &&
+    visibility.zones && zones.length > 0 &&
       new PolygonLayer<ThreatZone>({
         id: 'zones',
-        data: THREAT_ZONES,
+        data: zones,
         getPolygon: (d: ThreatZone): [number, number][] => d.coordinates,
         getFillColor: (d: ThreatZone): [number, number, number, number] => d.color,
         getLineColor: (d: ThreatZone): [number, number, number, number] => [d.color[0], d.color[1], d.color[2], 200],
@@ -95,10 +99,10 @@ export default function IntelMap() {
         autoHighlight: true,
       }),
 
-    visibility.strikes &&
+    visibility.strikes && strikes.length > 0 &&
       new ArcLayer<StrikeArc>({
         id: 'strikes',
-        data: STRIKE_ARCS,
+        data: strikes,
         getSourcePosition: (d: StrikeArc): [number, number] => d.from,
         getTargetPosition: (d: StrikeArc): [number, number] => d.to,
         getSourceColor: (d: StrikeArc): [number, number, number, number] =>
@@ -118,10 +122,10 @@ export default function IntelMap() {
         },
       }),
 
-    visibility.missiles &&
+    visibility.missiles && missiles.length > 0 &&
       new ArcLayer<MissileTrack>({
         id: 'missiles',
-        data: MISSILE_TRACKS,
+        data: missiles,
         getSourcePosition: (d: MissileTrack): [number, number] => d.from,
         getTargetPosition: (d: MissileTrack): [number, number] => d.to,
         getSourceColor: (): [number, number, number, number] => [210, 50, 50, 220],
@@ -137,10 +141,10 @@ export default function IntelMap() {
         },
       }),
 
-    visibility.targets &&
+    visibility.targets && targets.length > 0 &&
       new ScatterplotLayer<Target>({
         id: 'targets',
-        data: TARGETS,
+        data: targets,
         getPosition: (d: Target): [number, number] => d.position,
         getRadius: (d: Target): number =>
           d.status === 'DESTROYED' ? 18000 : d.status === 'DAMAGED' ? 14000 : 10000,
@@ -161,10 +165,10 @@ export default function IntelMap() {
         },
       }),
 
-    visibility.assets &&
+    visibility.assets && assets.length > 0 &&
       new ScatterplotLayer<Asset>({
         id: 'assets',
-        data: ALLIED_ASSETS,
+        data: assets,
         getPosition: (d: Asset): [number, number] => d.position,
         getRadius: (d: Asset): number => (d.type === 'CARRIER' ? 20000 : 14000),
         getFillColor: (d: Asset): [number, number, number, number] =>
@@ -180,10 +184,10 @@ export default function IntelMap() {
         },
       }),
 
-    visibility.targets &&
+    visibility.targets && targets.length > 0 &&
       new TextLayer<Target>({
         id: 'target-labels',
-        data: TARGETS,
+        data: targets,
         getPosition: (d: Target): [number, number] => d.position,
         getText: (d: Target): string => d.name,
         getSize: 11,
@@ -195,10 +199,10 @@ export default function IntelMap() {
         backgroundPadding: [3, 2, 3, 2] as [number, number, number, number],
       }),
 
-    visibility.assets &&
+    visibility.assets && assets.length > 0 &&
       new TextLayer<Asset>({
         id: 'asset-labels',
-        data: ALLIED_ASSETS,
+        data: assets,
         getPosition: (d: Asset): [number, number] => d.position,
         getText: (d: Asset): string => d.name,
         getSize: 10,
@@ -210,7 +214,7 @@ export default function IntelMap() {
         backgroundPadding: [3, 2, 3, 2] as [number, number, number, number],
       }),
 
-  ].filter(Boolean), [visibility]);
+  ].filter(Boolean), [visibility, strikes, missiles, targets, assets, zones, heatPts]);
 
   const getTooltip = useCallback(({ object, layer }: PickingInfo<TooltipObject>) => {
     if (!object) return null;

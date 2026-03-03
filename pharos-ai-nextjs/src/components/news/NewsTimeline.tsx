@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { getFeedById } from '@/data/rssFeeds';
+import { useRssFeeds } from '@/api/rss';
 import type { RssFeed, FeedItem } from '@/types/domain';
 
 // ─── Types ────────────────────────────────────────────────────
@@ -70,12 +70,13 @@ function formatTimeAgo(d: Date): string {
 
 /** Proxy image through our cache to avoid rate limiting */
 function proxyImg(url: string): string {
-  return `/api/img?url=${encodeURIComponent(url)}`;
+  return `/api/v1/img?url=${encodeURIComponent(url)}`;
 }
 
 // ─── Component ────────────────────────────────────────────────
 
 export function NewsTimeline({ feedData }: NewsTimelineProps) {
+  const { data: allFeeds } = useRssFeeds();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [selectedTiers, setSelectedTiers] = useState<Set<number>>(new Set([1, 2, 3, 4]));
@@ -190,7 +191,7 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
   const articles = useMemo(() => {
     const items: TimelineArticle[] = [];
     feedData.forEach((feedItems, feedId) => {
-      const feed = getFeedById(feedId);
+      const feed = (allFeeds ?? []).find(f => f.id === feedId);
       if (!feed) return;
       for (const item of feedItems) {
         const dateStr = item.isoDate ?? item.pubDate;

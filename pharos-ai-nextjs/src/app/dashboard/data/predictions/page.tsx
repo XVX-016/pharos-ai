@@ -35,7 +35,7 @@ export default function PredictionsDataPage() {
     setRefreshing(true);
     setError(null);
     try {
-      const res  = await fetch('/api/polymarket');
+      const res  = await fetch('/api/v1/predictions/markets');
       const data = await res.json() as { markets: PredictionMarket[]; fetchedAt: string; error?: string };
       if (data.error) throw new Error(data.error);
       setMarkets(data.markets);

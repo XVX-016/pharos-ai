@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { CONFLICT_COLLECTIONS, RSS_FEEDS } from '@/data/rssFeeds';
 import type { FeedItem } from '@/types/domain';
+import { useRssFeeds, useRssCollections } from '@/api/rss';
 import { clientCache, CLIENT_FRESH_TTL, type CachedFeed } from '@/lib/client-cache';
 import { ConflictBanner } from '@/components/news/ConflictBanner';
 import { ChannelView } from '@/components/news/ChannelView';
@@ -20,14 +20,18 @@ export default function NewsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const collection = CONFLICT_COLLECTIONS[0];
-  const channel = collection.channels[activeChannel];
+  const { data: feeds } = useRssFeeds();
+  const { data: collections } = useRssCollections();
+  const allFeeds = feeds ?? [];
+
+  const collection = collections?.[0];
+  const channel = collection?.channels[activeChannel];
 
   // Batch fetch all feeds (or just the ones needed)
   const fetchFeeds = useCallback(async (ids?: string[]) => {
     setRefreshing(true);
     try {
-      const feedIds = ids ?? RSS_FEEDS.map(f => f.id);
+      const feedIds = ids ?? allFeeds.map(f => f.id);
 
       // Check client cache — only fetch stale ones
       const staleIds = feedIds.filter(id => {
@@ -48,7 +52,7 @@ export default function NewsPage() {
       }
 
       // Batch fetch stale ones from server (server has its own cache too)
-      const res = await fetch('/api/rss', {
+      const res = await fetch('/api/v1/rss/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: staleIds }),
@@ -189,7 +193,7 @@ export default function NewsPage() {
       </div>
 
       {/* Content */}
-      {viewMode === 'conflict' && (
+      {viewMode === 'conflict' && collection && channel && (
         <>
           <ConflictBanner
             collection={collection}

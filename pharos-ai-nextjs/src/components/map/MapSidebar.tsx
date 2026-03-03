@@ -8,18 +8,13 @@ import StoryTimeline from './StoryTimeline';
 import StoryDateGroup from './StoryDateGroup';
 import { groupByDay } from './story-utils';
 
-import { MAP_STORIES } from '@/data/mapStories';
-
 import type { MapStory } from '@/data/mapStories';
-
-const SORTED_STORIES = [...MAP_STORIES].sort(
-  (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Props = {
   isOpen:          boolean;
+  stories:         MapStory[];
   activeStory:     MapStory | null;
   onToggle:        () => void;
   onActivateStory: (story: MapStory) => void;
@@ -28,11 +23,16 @@ type Props = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function MapSidebar({ isOpen, activeStory, onToggle, onActivateStory, onClearStory }: Props) {
+export default function MapSidebar({ isOpen, stories, activeStory, onToggle, onActivateStory, onClearStory }: Props) {
   const [openStoryId, setOpenStoryId] = useState<string | null>(null);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
 
-  const days = useMemo(() => groupByDay(SORTED_STORIES), []);
+  const sorted = useMemo(
+    () => [...stories].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()),
+    [stories],
+  );
+
+  const days = useMemo(() => groupByDay(sorted), [sorted]);
 
   // Auto-expand date group when a story is activated
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function MapSidebar({ isOpen, activeStory, onToggle, onActivateSt
         <span style={{
           background: 'var(--blue-dim)', color: 'var(--blue-l)',
           fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 10, marginLeft: 2,
-        }}>{MAP_STORIES.length}</span>
+        }}>{stories.length}</span>
         <Button variant="ghost" size="xs" onClick={onToggle}
           className="ml-auto h-5 w-5 p-0 text-[var(--t4)] text-base leading-none"
         >‹</Button>
@@ -87,7 +87,7 @@ export default function MapSidebar({ isOpen, activeStory, onToggle, onActivateSt
 
       {/* Timeline */}
       <StoryTimeline
-        stories={SORTED_STORIES}
+        stories={sorted}
         activeId={activeStory?.id ?? null}
         onActivate={(story) => { setOpenStoryId(story.id); onActivateStory(story); }}
       />

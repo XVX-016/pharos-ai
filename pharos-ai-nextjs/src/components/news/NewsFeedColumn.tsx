@@ -20,7 +20,7 @@ export function NewsFeedColumn({ feed, color, showImages = true, preloaded }: Ne
 
   const loadFeed = useCallback(async () => {
     try {
-      const res = await fetch(`/api/rss?ids=${feed.id}`);
+      const res = await fetch(`/api/v1/rss/fetch?ids=${feed.id}`);
       const data = await res.json();
       const result: FeedResult = data.feeds?.[0];
       if (result?.error) {

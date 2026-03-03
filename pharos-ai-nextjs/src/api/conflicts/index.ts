@@ -1,0 +1,32 @@
+import { useQuery } from '@tanstack/react-query';
+import type { ConflictDaySnapshot } from '@/types/domain';
+import { api } from '../client';
+import { queryKeys } from '../keys';
+
+const CONFLICT_ID = process.env.NEXT_PUBLIC_CONFLICT_ID!;
+
+export function useConflict(id: string = CONFLICT_ID) {
+  return useQuery({
+    queryKey: queryKeys.conflicts.detail(id),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    queryFn: () => api.get<any>(`/conflicts/${id}`),
+    staleTime: 60_000,
+  });
+}
+
+export function useConflictDays(id: string = CONFLICT_ID) {
+  return useQuery({
+    queryKey: queryKeys.conflicts.days(id),
+    queryFn: () => api.get<ConflictDaySnapshot[]>(`/conflicts/${id}/days`),
+    staleTime: 60_000,
+  });
+}
+
+export function useConflictDaySnapshot(id: string = CONFLICT_ID, day?: string) {
+  return useQuery({
+    queryKey: queryKeys.conflicts.snapshot(id, day),
+    queryFn: () => api.get<ConflictDaySnapshot>(`/conflicts/${id}/days/${day}`),
+    enabled: !!day,
+    staleTime: 60_000,
+  });
+}

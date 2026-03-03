@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, ColorType, LineStyle, AreaSeries, type IChartApi } from 'lightweight-charts';
-import type { EconomicIndex } from '@/data/economicIndexes';
+import type { EconomicIndex } from '@/types/domain';
 import type { MarketResult } from '@/types/domain';
 import { ECON_CATEGORY_MAP } from '@/data/economicIndexes';
 
@@ -90,7 +90,7 @@ export function FocusedChart({ index, data: initialData, initialRangeKey = '5d',
     setAnchorMode(false);
     try {
       const res = await fetch(
-        `/api/markets?tickers=${encodeURIComponent(index.ticker)}&range=${r.key}&interval=${r.interval}`,
+        `/api/v1/markets?tickers=${encodeURIComponent(index.ticker)}&range=${r.key}&interval=${r.interval}`,
       );
       const json = await res.json();
       const result: MarketResult = json.results?.[0];

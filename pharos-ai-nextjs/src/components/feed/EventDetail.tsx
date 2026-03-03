@@ -5,8 +5,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { IntelTabBar, TabsContent } from '@/components/shared/IntelTabs';
 import { SectionDivider } from '@/components/shared/SectionDivider';
 import XPostCard from '@/components/shared/XPostCard';
-import { getPostsForEvent } from '@/data/iranXPosts';
-import type { IntelEvent } from '@/data/iranEvents';
+import { useXPostsByEvent } from '@/api/x-posts';
+import type { IntelEvent, XPost } from '@/types/domain';
 import { SEV_C } from '@/lib/severity-colors';
 const TIER_C: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warning)', 3: 'var(--t4)' };
 const TIER_L: Record<number, string> = { 1: 'T1', 2: 'T2', 3: 'T3' };
@@ -32,7 +32,7 @@ interface Props {
 
 export function EventDetail({ event, tab, onTabChange }: Props) {
   const sc     = SEV_C[event.severity] ?? 'var(--info)';
-  const xPosts = getPostsForEvent(event.id);
+  const { data: xPosts = [] } = useXPostsByEvent(undefined, event.id);
 
   const tabs = [
     { value: 'report'  as const, label: 'INTEL REPORT' },
@@ -177,7 +177,7 @@ export function EventDetail({ event, tab, onTabChange }: Props) {
                       {xPosts.length} POSTS · PHAROS-CURATED · CHRONOLOGICAL
                     </span>
                   </div>
-                  {xPosts.map(p => <XPostCard key={p.id} post={p as import('@/data/iranXPosts').XPost} />)}
+                  {xPosts.map(p => <XPostCard key={p.id} post={p as XPost} />)}
                 </>
               )}
             </div>

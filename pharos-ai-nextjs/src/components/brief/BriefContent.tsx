@@ -1,20 +1,25 @@
 'use client';
 
-import { ACTORS, ACT_C, STA_C } from '@/data/iranActors';
+import { ACT_C, STA_C } from '@/data/iranActors';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Flag from '@/components/shared/Flag';
 import { DaySelector } from '@/components/shared/DaySelector';
 import { BriefSection, EconChip, ScenarioCard } from '@/components/brief/BriefSection';
 import { useConflictDay } from '@/hooks/use-conflict-day';
-import { getConflictForDay, getActorForDay } from '@/lib/day-filter';
+import { useConflictDaySnapshot } from '@/api/conflicts';
+import { useActors } from '@/api/actors';
 import { BRIEF_SOURCES, TIER_C } from '@/components/brief/brief-constants';
 
 const MAJOR_IDS = ['us', 'idf', 'iran', 'irgc', 'houthis'];
 
 export function BriefContent() {
   const { currentDay, setDay, dayLabel, dayIndex } = useConflictDay();
-  const snapshot = getConflictForDay(currentDay);
-  const majorActors = ACTORS.filter(a => MAJOR_IDS.includes(a.id));
+  const { data: snapshot } = useConflictDaySnapshot(undefined, currentDay || undefined);
+  const { data: actors } = useActors(undefined, currentDay || undefined);
+
+  const majorActors = actors?.filter(a => MAJOR_IDS.includes(a.id)) ?? [];
+
+  if (!snapshot) return null;
 
   return (
     <ScrollArea className="flex-1 bg-[var(--bg-1)]">
@@ -63,9 +68,8 @@ export function BriefContent() {
         <BriefSection number="3" title="SITUATION BY ACTOR">
           <div className="flex flex-col gap-3">
             {majorActors.map(actor => {
-              const snap = getActorForDay(actor, currentDay);
-              const actC = ACT_C[snap.activityLevel] ?? 'var(--t2)';
-              const staC = STA_C[snap.stance] ?? 'var(--t2)';
+              const actC = ACT_C[actor.activityLevel] ?? 'var(--t2)';
+              const staC = STA_C[actor.stance] ?? 'var(--t2)';
               return (
                 <div key={actor.id} className="px-4 py-3 bg-[var(--bg-2)] border border-[var(--bd)]">
                   <div className="flex items-center gap-2 mb-2">
@@ -73,14 +77,14 @@ export function BriefContent() {
                     <span className="text-[13px] font-bold text-[var(--t1)]">{actor.fullName}</span>
                     <span className="text-[8px] font-bold px-[6px] py-[2px] ml-auto"
                       style={{ background: actC + '18', color: actC }}>
-                      {snap.activityLevel}
+                      {actor.activityLevel}
                     </span>
                     <span className="text-[8px] font-bold px-[6px] py-[2px]"
                       style={{ background: staC + '18', color: staC }}>
-                      {snap.stance}
+                      {actor.stance}
                     </span>
                   </div>
-                  <p className="text-[12.5px] text-[var(--t2)] leading-relaxed">{snap.assessment}</p>
+                  <p className="text-[12.5px] text-[var(--t2)] leading-relaxed">{actor.assessment}</p>
                 </div>
               );
             })}

@@ -5,13 +5,14 @@ import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverTrigger } from '@/components/ui/popover';
 import { DayPickerDropdown } from '@/components/shared/DayPickerDropdown';
-import { dayLabel, dayShort, getEventsForDay } from '@/lib/day-filter';
-import type { ConflictDay } from '@/types/domain';
-import { CONFLICT_DAYS } from '@/types/domain';
+import { dayLabel, dayShort } from '@/lib/day-filter';
+import { useConflictDay } from '@/hooks/use-conflict-day';
+import { useEvents } from '@/api/events';
+import { useConflictDays } from '@/api/conflicts';
 
 type Props = {
-  currentDay: ConflictDay;
-  onDayChange: (day: ConflictDay) => void;
+  currentDay: string;
+  onDayChange: (day: string) => void;
   showAll?: boolean;
   allSelected?: boolean;
   onAllClick?: () => void;
@@ -19,12 +20,15 @@ type Props = {
 
 export function DaySelector({ currentDay, onDayChange, showAll, allSelected, onAllClick }: Props) {
   const [open, setOpen] = useState(false);
-  const idx = CONFLICT_DAYS.indexOf(currentDay);
+  const { allDays } = useConflictDay();
+  const { data: events } = useEvents();
+  const { data: snapshots } = useConflictDays();
+  const idx = allDays.indexOf(currentDay);
   const canPrev = idx > 0;
-  const canNext = idx < CONFLICT_DAYS.length - 1;
-  const evtCount = getEventsForDay(currentDay).length;
+  const canNext = idx < allDays.length - 1;
+  const evtCount = events?.filter(e => e.timestamp.startsWith(currentDay)).length ?? 0;
 
-  function handleSelect(day: ConflictDay) {
+  function handleSelect(day: string) {
     onDayChange(day);
     setOpen(false);
   }
@@ -50,7 +54,7 @@ export function DaySelector({ currentDay, onDayChange, showAll, allSelected, onA
       <Button
         variant="outline"
         size="icon-xs"
-        onClick={() => canPrev && onDayChange(CONFLICT_DAYS[idx - 1])}
+        onClick={() => canPrev && onDayChange(allDays[idx - 1])}
         disabled={!canPrev}
         className="rounded-none"
         style={{ borderColor: 'var(--bd)' }}
@@ -73,7 +77,7 @@ export function DaySelector({ currentDay, onDayChange, showAll, allSelected, onA
               className="mono text-[9px] font-bold tracking-[0.08em]"
               style={{ color: allSelected ? 'var(--t3)' : 'var(--danger)' }}
             >
-              {dayLabel(currentDay)}
+              {dayLabel(currentDay, allDays)}
             </span>
             <span
               className="mono text-[8px]"
@@ -99,13 +103,16 @@ export function DaySelector({ currentDay, onDayChange, showAll, allSelected, onA
           currentDay={currentDay}
           allSelected={allSelected}
           onSelect={handleSelect}
+          allDays={allDays}
+          events={events ?? []}
+          snapshots={snapshots ?? []}
         />
       </Popover>
 
       <Button
         variant="outline"
         size="icon-xs"
-        onClick={() => canNext && onDayChange(CONFLICT_DAYS[idx + 1])}
+        onClick={() => canNext && onDayChange(allDays[idx + 1])}
         disabled={!canNext}
         className="rounded-none"
         style={{ borderColor: 'var(--bd)' }}

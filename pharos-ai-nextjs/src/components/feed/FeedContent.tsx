@@ -6,7 +6,8 @@ import { FileText } from 'lucide-react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { usePanelLayout } from '@/hooks/use-panel-layout';
 import { useConflictDay } from '@/hooks/use-conflict-day';
-import { EVENTS, type Severity, type EventType } from '@/data/iranEvents';
+import type { Severity, EventType } from '@/types/domain';
+import { useEvents } from '@/api/events';
 import { FeedFilterRail, ALL_TYPES } from '@/components/feed/FeedFilterRail';
 import { EventLog } from '@/components/feed/EventLog';
 import { EventDetail } from '@/components/feed/EventDetail';
@@ -16,7 +17,8 @@ import { getEventsForDay } from '@/lib/day-filter';
 export function FeedContent() {
   const searchParams = useSearchParams();
   const initEvent    = searchParams.get('event');
-  const { currentDay, setDay } = useConflictDay();
+  const { currentDay, setDay, allDays } = useConflictDay();
+  const { data: allEvents } = useEvents();
   const [showAllDays, setShowAllDays] = useState(true);
 
   const [sevFilter,  setSevFilter]  = useState<Record<Severity, boolean>>({ CRITICAL: true, HIGH: true, STANDARD: true });
@@ -31,16 +33,17 @@ export function FeedContent() {
   useEffect(() => { if (initEvent) setSelId(initEvent); }, [initEvent]);
 
   const filtered = useMemo(() => {
-    const base = showAllDays ? EVENTS : getEventsForDay(currentDay);
+    const events = allEvents ?? [];
+    const base = showAllDays ? events : getEventsForDay(events, allDays, currentDay);
     return base.filter(e => {
       if (!sevFilter[e.severity]) return false;
       if (!typeFilter[e.type])    return false;
       if (verOnly && !e.verified) return false;
       return true;
     }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [sevFilter, typeFilter, verOnly, currentDay, showAllDays]);
+  }, [sevFilter, typeFilter, verOnly, currentDay, showAllDays, allEvents, allDays]);
 
-  const selected = EVENTS.find(e => e.id === selId) ?? null;
+  const selected = allEvents?.find(e => e.id === selId) ?? null;
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-hidden">

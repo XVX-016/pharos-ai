@@ -1,6 +1,6 @@
 'use client';
 
-import { getFeedsForChannel } from '@/data/rssFeeds';
+import { useRssFeeds } from '@/api/rss';
 import type { ConflictChannel, FeedItem } from '@/types/domain';
 import { NewsFeedColumn } from './NewsFeedColumn';
 
@@ -11,7 +11,10 @@ interface ChannelViewProps {
 }
 
 export function ChannelView({ channel, showImages, feedData }: ChannelViewProps) {
-  const feeds = getFeedsForChannel(channel.feedIds);
+  const { data: allFeeds } = useRssFeeds();
+  const feeds = channel.feedIds
+    .map(id => (allFeeds ?? []).find(f => f.id === id))
+    .filter(Boolean) as import('@/types/domain').RssFeed[];
 
   return (
     <div className="flex-1 flex flex-col min-h-0 w-full">

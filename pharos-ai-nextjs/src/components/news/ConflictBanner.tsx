@@ -1,6 +1,6 @@
 'use client';
 
-import type { ConflictCollection } from '@/data/rssFeeds';
+import type { ConflictCollection } from '@/types/domain';
 
 interface ConflictBannerProps {
   collection: ConflictCollection;

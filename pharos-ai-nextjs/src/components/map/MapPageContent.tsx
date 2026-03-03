@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 import '@/lib/deckgl-device';
 import DeckGL from '@deck.gl/react';
@@ -9,6 +9,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useAppSelector, useAppDispatch } from '@/store';
 import {
+  loadMapData     as loadMapDataThunk,
   setViewState    as setViewStateAction,
   activateStory   as activateStoryAction,
   setActiveStory  as setActiveStoryAction,
@@ -16,6 +17,7 @@ import {
   toggleSidebar   as toggleSidebarAction,
   setMapStyle     as setMapStyleAction,
 } from '@/store/map-slice';
+import { useMapStories } from '@/api/map';
 
 import { useMapFilters } from '@/hooks/use-map-filters';
 import { useMapLayers } from '@/hooks/use-map-layers';
@@ -39,6 +41,8 @@ import type { OverlayVisibility } from '@/components/map/MapVisibilityMenu';
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const CONFLICT_ID = process.env.NEXT_PUBLIC_CONFLICT_ID ?? 'iran-2026';
+
 export default function FullMapPage({ embedded = false }: { embedded?: boolean }) {
   const dispatch = useAppDispatch();
   const viewState    = useAppSelector(s => s.map.viewState);
@@ -47,6 +51,10 @@ export default function FullMapPage({ embedded = false }: { embedded?: boolean }
   const sidebarOpen  = useAppSelector(s => s.map.sidebarOpen);
   const mapStyle     = useAppSelector(s => s.map.mapStyle);
   const { defaultLayout, onLayoutChanged } = usePanelLayout({ id: 'map', panelIds: ['sidebar', 'canvas'] });
+  const { data: stories = [] } = useMapStories();
+
+  // Load map data into Redux on mount
+  useEffect(() => { dispatch(loadMapDataThunk(CONFLICT_ID)); }, [dispatch]);
 
   const [overlayVisibility, setOverlayVisibility] = useState<OverlayVisibility>({
     timeline: true,
@@ -85,6 +93,7 @@ export default function FullMapPage({ embedded = false }: { embedded?: boolean }
           <ResizablePanel id="sidebar" defaultSize="25%" minSize="15%" maxSize="40%" className="flex flex-col overflow-hidden min-w-[280px]">
             <MapSidebar
               isOpen={sidebarOpen}
+              stories={stories}
               activeStory={activeStory}
               onToggle={() => dispatch(toggleSidebarAction())}
               onActivateStory={story => dispatch(activateStoryAction(story))}

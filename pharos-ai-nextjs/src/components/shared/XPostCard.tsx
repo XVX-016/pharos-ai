@@ -4,7 +4,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ago } from '@/lib/format';
-import { type XPost, fmt } from '@/data/iranXPosts';
+import type { XPost } from '@/types/domain';
+import { fmt } from '@/lib/format';
 
 // ── Account type styles ───────────────────────────────────────────────────────
 // Uses CSS tokens — no hex literals (CODEX §1.2)

@@ -5,7 +5,8 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { usePanelLayout } from '@/hooks/use-panel-layout';
 import { useConflictDay } from '@/hooks/use-conflict-day';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X_POSTS, type XPost } from '@/data/iranXPosts';
+import type { XPost } from '@/types/domain';
+import { useXPosts } from '@/api/x-posts';
 import XPostCard from '@/components/shared/XPostCard';
 import { SignalFilterRail, type Significance, type AccountType } from '@/components/signals/SignalFilterRail';
 import { SectionHeader } from '@/components/signals/SectionHeader';
@@ -16,18 +17,20 @@ export function SignalsContent() {
   const [acctFilter, setAcctFilter] = useState<Record<AccountType, boolean>>({ military: true, government: true, journalist: true, analyst: true, official: true });
   const [pharosOnly, setPharosOnly] = useState(false);
   const { defaultLayout, onLayoutChanged } = usePanelLayout({ id: 'signals' });
-  const { currentDay, setDay } = useConflictDay();
+  const { currentDay, setDay, allDays } = useConflictDay();
+  const { data: allPosts } = useXPosts();
   const [showAll, setShowAll] = useState(true);
 
   const filtered = useMemo(() => {
-    const base = showAll ? X_POSTS : getPostsForDay(currentDay);
+    const posts = allPosts ?? [];
+    const base = showAll ? posts : getPostsForDay(posts, allDays, currentDay);
     return base.filter(p => {
       if (!sigFilter[p.significance as Significance])       return false;
       if (!acctFilter[p.accountType as AccountType])        return false;
       if (pharosOnly && !p.pharosNote)                      return false;
       return true;
     });
-  }, [sigFilter, acctFilter, pharosOnly, currentDay, showAll]);
+  }, [sigFilter, acctFilter, pharosOnly, currentDay, showAll, allPosts, allDays]);
 
   const breaking = filtered.filter(p => p.significance === 'BREAKING');
   const high     = filtered.filter(p => p.significance === 'HIGH');
@@ -41,7 +44,7 @@ export function SignalsContent() {
           acctFilter={acctFilter}
           pharosOnly={pharosOnly}
           totalShown={filtered.length}
-          totalAll={X_POSTS.length}
+          totalAll={allPosts?.length ?? 0}
           onSigChange={(s, v) => setSigFilter(p => ({ ...p, [s]: v }))}
           onAcctChange={(a, v) => setAcctFilter(p => ({ ...p, [a]: v }))}
           onPharosOnly={setPharosOnly}

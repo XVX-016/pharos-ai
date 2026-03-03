@@ -3,20 +3,21 @@
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useCallback } from 'react';
 import { dayLabel, dayShort, dayIndex } from '@/lib/day-filter';
-import type { ConflictDay } from '@/types/domain';
-import { CONFLICT_DAYS } from '@/types/domain';
+import { useBootstrap } from '@/api/bootstrap';
 
 export function useConflictDay() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { data: bootstrap } = useBootstrap();
 
-  const raw = searchParams.get('day') as ConflictDay | null;
-  const currentDay: ConflictDay = raw && CONFLICT_DAYS.includes(raw)
+  const allDays = bootstrap?.days ?? [];
+  const raw = searchParams.get('day');
+  const currentDay: string = raw && allDays.includes(raw)
     ? raw
-    : CONFLICT_DAYS[CONFLICT_DAYS.length - 1];
+    : allDays[allDays.length - 1] ?? '';
 
-  const setDay = useCallback((day: ConflictDay) => {
+  const setDay = useCallback((day: string) => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('day', day);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
@@ -25,9 +26,10 @@ export function useConflictDay() {
   return {
     currentDay,
     setDay,
-    dayLabel: dayLabel(currentDay),
-    dayShort: dayShort(currentDay),
-    dayIndex: dayIndex(currentDay),
-    allDays: CONFLICT_DAYS,
+    dayLabel: currentDay ? dayLabel(currentDay, allDays) : '',
+    dayShort: currentDay ? dayShort(currentDay) : '',
+    dayIndex: currentDay ? dayIndex(currentDay, allDays) : -1,
+    allDays,
+    isLoading: !bootstrap,
   };
 }

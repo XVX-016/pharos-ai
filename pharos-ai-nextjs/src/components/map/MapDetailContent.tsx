@@ -2,14 +2,23 @@
 
 import { Button } from '@/components/ui/button';
 
+import { useAppSelector } from '@/store';
+import { useMapStories } from '@/api/map';
+
 import { ACTOR_META, CATEGORY_LABEL, STATUS_META } from '@/data/mapTokens';
-import { STRIKE_ARCS, TARGETS } from '@/data/mapData';
-import { MAP_STORIES } from '@/data/mapStories';
 import StoryIcon from './StoryIcon';
 
 import type { StrikeArc, MissileTrack, Target, Asset, ThreatZone } from '@/data/mapData';
 import type { MapStory } from '@/data/mapStories';
 import type { SelectedItem } from './MapDetailPanel';
+
+// ─── Hook for cross-reference data ───────────────────────────────────────────
+
+function useMapCrossRefData() {
+  const rawData = useAppSelector(s => s.map.rawData);
+  const { data: stories = [] } = useMapStories();
+  return { rawData, stories };
+}
 
 // ─── Atoms ────────────────────────────────────────────────────────────────────
 
@@ -59,22 +68,22 @@ export function HierarchyBreadcrumb({ actor, category, type }: { actor: string; 
   );
 }
 
-// ─── Cross-link helpers ───────────────────────────────────────────────────────
+// ─── Cross-link helpers (accept data as parameters) ──────────────────────────
 
-function strikesForTarget(t: Target): StrikeArc[] {
-  return STRIKE_ARCS.filter(s =>
+function strikesForTarget(t: Target, strikes: StrikeArc[]): StrikeArc[] {
+  return strikes.filter(s =>
     Math.abs(s.to[0] - t.position[0]) < 0.05 && Math.abs(s.to[1] - t.position[1]) < 0.05,
   );
 }
 
-function targetForStrike(s: StrikeArc): Target | null {
-  return TARGETS.find(t =>
+function targetForStrike(s: StrikeArc, targets: Target[]): Target | null {
+  return targets.find(t =>
     Math.abs(t.position[0] - s.to[0]) < 0.05 && Math.abs(t.position[1] - s.to[1]) < 0.05,
   ) ?? null;
 }
 
-function storiesFor(ids: string[], field: keyof MapStory): MapStory[] {
-  return MAP_STORIES.filter(s => (s[field] as string[]).some(id => ids.includes(id)));
+function storiesFor(ids: string[], field: keyof MapStory, stories: MapStory[]): MapStory[] {
+  return stories.filter(s => (s[field] as string[]).some(id => ids.includes(id)));
 }
 
 // ─── Related stories ──────────────────────────────────────────────────────────
@@ -110,8 +119,9 @@ export function StrikeContent({ d, onSelectItem, onActivateStory }: {
   onSelectItem: (i: SelectedItem) => void;
   onActivateStory: (s: MapStory) => void;
 }) {
-  const relatedTarget  = targetForStrike(d);
-  const relatedStories = storiesFor([d.id], 'highlightStrikeIds');
+  const { rawData, stories } = useMapCrossRefData();
+  const relatedTarget  = rawData ? targetForStrike(d, rawData.targets) : null;
+  const relatedStories = storiesFor([d.id], 'highlightStrikeIds', stories);
   const statusMeta     = STATUS_META[d.status];
 
   return (
@@ -151,7 +161,8 @@ export function MissileContent({ d, onActivateStory }: {
   d: MissileTrack;
   onActivateStory: (s: MapStory) => void;
 }) {
-  const relatedStories = storiesFor([d.id], 'highlightMissileIds');
+  const { stories } = useMapCrossRefData();
+  const relatedStories = storiesFor([d.id], 'highlightMissileIds', stories);
   const isIntercepted  = d.status === 'INTERCEPTED';
   const statusColor    = isIntercepted ? 'var(--warning)' : 'var(--danger)';
 
@@ -184,10 +195,11 @@ export function TargetContent({ d, onSelectItem, onActivateStory }: {
   onSelectItem: (i: SelectedItem) => void;
   onActivateStory: (s: MapStory) => void;
 }) {
+  const { rawData, stories } = useMapCrossRefData();
   const statusMeta     = STATUS_META[d.status];
   const actorMeta      = ACTOR_META[d.actor];
-  const incomingStrikes = strikesForTarget(d);
-  const relatedStories = storiesFor([d.id], 'highlightTargetIds');
+  const incomingStrikes = rawData ? strikesForTarget(d, rawData.strikes) : [];
+  const relatedStories = storiesFor([d.id], 'highlightTargetIds', stories);
 
   return (
     <>
@@ -230,8 +242,9 @@ export function AssetContent({ d, onActivateStory }: {
   d: Asset;
   onActivateStory: (s: MapStory) => void;
 }) {
+  const { stories } = useMapCrossRefData();
   const actorMeta      = ACTOR_META[d.actor];
-  const relatedStories = storiesFor([d.id], 'highlightAssetIds');
+  const relatedStories = storiesFor([d.id], 'highlightAssetIds', stories);
 
   return (
     <>

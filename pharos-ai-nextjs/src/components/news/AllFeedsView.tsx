@@ -1,6 +1,6 @@
 'use client';
 
-import { RSS_FEEDS } from '@/data/rssFeeds';
+import { useRssFeeds } from '@/api/rss';
 import { NewsFeedColumn } from './NewsFeedColumn';
 import { useState, useMemo } from 'react';
 import { PERSPECTIVE_COLORS } from '@/lib/news-colors';
@@ -14,11 +14,13 @@ interface AllFeedsViewProps {
 }
 
 export function AllFeedsView({ showImages, feedData }: AllFeedsViewProps) {
+  const { data: feeds } = useRssFeeds();
+  const allFeeds = feeds ?? [];
   const [filter, setFilter] = useState<string>('ALL');
 
   const filtered = useMemo(
-    () => filter === 'ALL' ? RSS_FEEDS : RSS_FEEDS.filter(f => f.perspective === filter),
-    [filter],
+    () => filter === 'ALL' ? allFeeds : allFeeds.filter(f => f.perspective === filter),
+    [filter, allFeeds],
   );
 
   return (

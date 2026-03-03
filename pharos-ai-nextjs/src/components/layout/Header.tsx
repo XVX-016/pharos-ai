@@ -1,10 +1,10 @@
 'use client';
 import Link           from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CONFLICT }   from '@/data/iranConflict';
-import { EVENTS }     from '@/data/iranEvents';
 import { fmtDate }    from '@/lib/format';
-import { CONFLICT_DAYS } from '@/types/domain';
+import { useBootstrap } from '@/api/bootstrap';
+import { useEvents } from '@/api/events';
+import { useConflict } from '@/api/conflicts';
 
 const NAV = [
   { label: 'OVERVIEW',    href: '/dashboard'              },
@@ -16,20 +16,24 @@ const NAV = [
   { label: 'DATA',        href: '/dashboard/data'          },
 ];
 
-const DAY_COUNT = CONFLICT_DAYS.length;
-const LATEST_DAY = CONFLICT_DAYS[CONFLICT_DAYS.length - 1];
-const LATEST_LABEL = `DAY ${DAY_COUNT}`;
-const LATEST_SHORT = LATEST_DAY === '2026-03-02' ? 'MAR 2, 2026' : LATEST_DAY;
-
 export function Header() {
   const path = usePathname();
+  const { data: bootstrap } = useBootstrap();
+  const { data: events } = useEvents();
+  const { data: conflict } = useConflict();
+
   const isActive = (href: string) =>
     href === '/dashboard' ? path === '/dashboard' : path.startsWith(href);
 
-  const latestDate = [...EVENTS]
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]?.timestamp;
-  const displayDate = latestDate ? fmtDate(latestDate) : fmtDate(CONFLICT.startDate);
-  const usKia = CONFLICT.casualties.us.kia;
+  const allDays = bootstrap?.days ?? [];
+  const dayCount = allDays.length;
+  const latestDay = allDays[allDays.length - 1] ?? '';
+  const latestLabel = `DAY ${dayCount}`;
+
+  const latestDate = events && events.length > 0
+    ? [...events].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]?.timestamp
+    : undefined;
+  const displayDate = latestDate ? fmtDate(latestDate) : (conflict ? fmtDate(conflict.startDate) : '');
 
   return (
     <header
@@ -61,17 +65,17 @@ export function Header() {
           className="px-[7px] py-0.5 bg-[var(--danger-dim)] border border-[var(--danger-bd)] rounded-sm"
         >
           <span className="text-[8px] font-bold text-[var(--danger)] tracking-[0.08em] uppercase">
-            ONGOING
+            {bootstrap?.status ?? 'ONGOING'}
           </span>
         </div>
 
         {/* Day indicator */}
         <div className="w-px h-4 bg-[var(--bd)]" />
         <span className="mono text-[9px] font-bold text-[var(--warning)] tracking-[0.06em]">
-          {LATEST_LABEL}
+          {latestLabel}
         </span>
         <span className="mono text-[8px] text-[var(--t4)] tracking-[0.04em]">
-          {LATEST_SHORT}
+          {latestDay}
         </span>
       </Link>
 
@@ -111,16 +115,6 @@ export function Header() {
         <span className="mono text-[10px] text-[var(--t4)] tracking-[0.02em]">
           {displayDate} · UTC
         </span>
-
-        {/* KIA badge */}
-        <div
-          className="flex items-center gap-[5px] px-[9px] py-[3px] bg-[var(--danger-dim)] border border-[var(--danger-bd)] rounded-sm"
-        >
-          <div className="w-[5px] h-[5px] rounded-full bg-[var(--danger)] shrink-0" />
-          <span className="text-[9px] font-bold text-[var(--danger)] tracking-[0.08em] uppercase">
-            {usKia} US KIA
-          </span>
-        </div>
       </div>
     </header>
   );

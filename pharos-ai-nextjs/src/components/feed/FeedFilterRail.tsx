@@ -2,7 +2,7 @@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FilterBlock, CheckboxRow } from '@/components/shared/FilterControls';
 import { DaySelector } from '@/components/shared/DaySelector';
-import type { Severity, EventType } from '@/data/iranEvents';
+import type { Severity, EventType } from '@/types/domain';
 import type { ConflictDay } from '@/types/domain';
 import { SEV_C, TYPE_C } from '@/lib/severity-colors';
 

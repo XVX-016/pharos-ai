@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { RSS_FEEDS, getFeedById } from '@/data/rssFeeds';
+import { useRssFeeds } from '@/api/rss';
 import { NewsTimeline } from '@/components/news/NewsTimeline';
 import Link from 'next/link';
 import type { FeedItem } from '@/types/domain';
@@ -12,6 +12,8 @@ import { clientCache, CLIENT_FRESH_TTL } from '@/lib/client-cache';
 type ViewMode = 'feed' | 'timeline';
 
 export default function TimelinePage() {
+  const { data: feeds } = useRssFeeds();
+  const allFeeds = feeds ?? [];
   const [feedData,    setFeedData]    = useState<Map<string, FeedItem[]>>(new Map());
   const [refreshing,  setRefreshing]  = useState(false);
   const [lastRefresh, setLastRefresh] = useState<number>(0);
@@ -21,7 +23,7 @@ export default function TimelinePage() {
   const fetchFeeds = useCallback(async () => {
     setRefreshing(true);
     try {
-      const allIds = RSS_FEEDS.map(f => f.id);
+      const allIds = allFeeds.map(f => f.id);
       const staleIds = allIds.filter(id => {
         const cached = clientCache.get(id);
         return !cached || Date.now() - cached.fetchedAt > CLIENT_FRESH_TTL;
@@ -35,7 +37,7 @@ export default function TimelinePage() {
         return;
       }
 
-      const res = await fetch('/api/rss', {
+      const res = await fetch('/api/v1/rss/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: staleIds }),
@@ -153,7 +155,7 @@ export default function TimelinePage() {
             </div>
           ) : (
             allArticles.map(({ item, feedId }, i) => {
-              const feed = getFeedById(feedId);
+              const feed = allFeeds.find(f => f.id === feedId);
               const color = feed ? (PERSPECTIVE_COLORS[feed.perspective] ?? '#6b7280') : '#6b7280';
               return (
                 <a

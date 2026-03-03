@@ -4,8 +4,8 @@ import { CheckCircle, ArrowRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { IntelEvent } from '@/data/iranEvents';
-import { getPostsForEvent } from '@/data/iranXPosts';
+import type { IntelEvent } from '@/types/domain';
+import { useXPosts } from '@/api/x-posts';
 import { SEV_C } from '@/lib/severity-colors';
 const SEV_BG: Record<string, string> = {
   CRITICAL: 'var(--danger-dim)', HIGH: 'var(--warning-dim)', STANDARD: 'var(--info-dim)',
@@ -28,6 +28,7 @@ interface Props {
 }
 
 export function EventLog({ events, selectedId, onSelect }: Props) {
+  const { data: allPosts } = useXPosts();
   const grouped = groupByDate(events);
 
   return (
@@ -57,7 +58,7 @@ export function EventLog({ events, selectedId, onSelect }: Props) {
               const isOn = selectedId === evt.id;
               const sc   = SEV_C[evt.severity] ?? 'var(--info)';
               const sbg  = SEV_BG[evt.severity] ?? 'var(--info-dim)';
-              const xc   = getPostsForEvent(evt.id).length;
+              const xc   = (allPosts ?? []).filter(p => p.eventId === evt.id).length;
               return (
                 <Button
                   key={evt.id}

@@ -1,0 +1,25 @@
+import { useQuery } from '@tanstack/react-query';
+import type { Actor } from '@/types/domain';
+import { api, buildUrl } from '../client';
+import { queryKeys } from '../keys';
+
+const CONFLICT_ID = process.env.NEXT_PUBLIC_CONFLICT_ID!;
+
+export function useActors(id: string = CONFLICT_ID, day?: string) {
+  return useQuery({
+    queryKey: queryKeys.actors.list(id, day),
+    queryFn: () =>
+      api.get<Actor[]>(buildUrl(`/conflicts/${id}/actors`, { day })),
+    staleTime: 60_000,
+  });
+}
+
+export function useActor(id: string = CONFLICT_ID, actorId?: string, day?: string) {
+  return useQuery({
+    queryKey: queryKeys.actors.detail(id, actorId, day),
+    queryFn: () =>
+      api.get<Actor>(buildUrl(`/conflicts/${id}/actors/${actorId}`, { day })),
+    enabled: !!actorId,
+    staleTime: 60_000,
+  });
+}

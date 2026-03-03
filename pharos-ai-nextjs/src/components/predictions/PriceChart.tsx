@@ -25,7 +25,7 @@ export function PriceChart({ yesTokenId }: Props) {
 
   useEffect(() => {
     if (!yesTokenId) { setLoading(false); setError(true); return; }
-    fetch(`/api/polymarket/chart?id=${encodeURIComponent(yesTokenId)}`)
+    fetch(`/api/v1/predictions/chart?id=${encodeURIComponent(yesTokenId)}`)
       .then(r => r.json())
       .then((d: { history?: TimePoint[] }) => { setHistory(d.history ?? []); setLoading(false); })
       .catch(() => { setError(true); setLoading(false); });

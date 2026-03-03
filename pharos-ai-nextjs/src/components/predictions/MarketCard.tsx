@@ -28,7 +28,7 @@ export function MarketCard({ market, group, rank, onFocus }: MarketCardProps) {
   useEffect(() => {
     if (!market.yesTokenId) { setChartLoading(false); return; }
     let cancelled = false;
-    fetch(`/api/polymarket/history?tokenId=${encodeURIComponent(market.yesTokenId)}&range=7d`)
+    fetch(`/api/v1/predictions/history?tokenId=${encodeURIComponent(market.yesTokenId)}&range=7d`)
       .then(r => r.json())
       .then(d => { if (!cancelled) setHistory(d.history ?? []); })
       .catch(() => {})

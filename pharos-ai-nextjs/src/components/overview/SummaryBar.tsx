@@ -1,29 +1,30 @@
-import { CONFLICT } from '@/data/iranConflict';
-import { EVENTS }   from '@/data/iranEvents';
-import { fmtDate }  from '@/lib/format';
+'use client';
 
-function computeDay(): number {
-  const start = new Date(CONFLICT.startDate).getTime();
-  const latest = EVENTS.reduce((max, e) => {
+import { fmtDate }  from '@/lib/format';
+import { useConflict } from '@/api/conflicts';
+import { useEvents } from '@/api/events';
+
+export function SummaryBar() {
+  const { data: conflict } = useConflict();
+  const { data: events } = useEvents();
+
+  if (!conflict || !events) return null;
+
+  const start = new Date(conflict.startDate).getTime();
+  const latest = events.reduce((max, e) => {
     const t = new Date(e.timestamp).getTime();
     return t > max ? t : max;
   }, start);
-  return Math.floor((latest - start) / 86_400_000) + 1;
-}
+  const day = Math.floor((latest - start) / 86_400_000) + 1;
 
-export function SummaryBar() {
-  const day = computeDay();
-  const latestDate = [...EVENTS]
+  const latestDate = [...events]
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]?.timestamp;
-  const endDateStr = latestDate ? fmtDate(latestDate) : fmtDate(CONFLICT.startDate);
+  const endDateStr = latestDate ? fmtDate(latestDate) : fmtDate(conflict.startDate);
 
   const chips: { label: string; danger: boolean }[] = [
-    { label: 'KHAMENEI KILLED',                                    danger: true  },
-    { label: 'HORMUZ CLOSED',                                      danger: true  },
-    { label: `${CONFLICT.casualties.us.kia} US KIA`,               danger: true  },
-    { label: `${CONFLICT.casualties.iran.killed} IR DEAD`,         danger: true  },
-    { label: `${CONFLICT.casualties.israel.civilians} IL DEAD`,    danger: true  },
-    { label: `DAY ${day}`,                                          danger: false },
+    { label: 'KHAMENEI KILLED',           danger: true  },
+    { label: 'HORMUZ CLOSED',             danger: true  },
+    { label: `DAY ${day}`,                 danger: false },
   ];
 
   return (
@@ -44,7 +45,7 @@ export function SummaryBar() {
       ))}
       <div className="ml-auto shrink-0">
         <span className="mono text-[9px] text-[var(--t4)]">
-          {fmtDate(CONFLICT.startDate)} – {endDateStr} · OPERATIONS {CONFLICT.status}
+          {fmtDate(conflict.startDate)} – {endDateStr} · OPERATIONS {conflict.status}
         </span>
       </div>
     </div>

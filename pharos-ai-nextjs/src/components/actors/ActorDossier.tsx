@@ -5,30 +5,35 @@ import { IntelTabBar, TabsContent } from '@/components/shared/IntelTabs';
 import Flag from '@/components/shared/Flag';
 import XPostCard from '@/components/shared/XPostCard';
 import { ActorIntelTab } from '@/components/actors/ActorIntelTab';
-import { ACT_C, STA_C, type Actor } from '@/data/iranActors';
-import { getPostsForActor } from '@/data/iranXPosts';
+import { ACT_C, STA_C } from '@/data/iranActors';
 import { getActorForDay, dayAbbrev } from '@/lib/day-filter';
-import type { ConflictDay } from '@/types/domain';
-import { CONFLICT_DAYS } from '@/types/domain';
+import { useXPostsByActor } from '@/api/x-posts';
+import { useConflictDay } from '@/hooks/use-conflict-day';
+import type { Actor, XPost } from '@/types/domain';
 
 type Props = {
   actor: Actor;
   tab: 'intel' | 'signals';
   onTabChange: (t: 'intel' | 'signals') => void;
-  currentDay: ConflictDay;
+  currentDay: string;
 };
 
 export function ActorDossier({ actor, tab, onTabChange, currentDay }: Props) {
   const snap   = getActorForDay(actor, currentDay);
-  const actC   = ACT_C[snap.activityLevel] ?? 'var(--t2)';
-  const staC   = STA_C[snap.stance] ?? 'var(--t2)';
-  const xPosts = getPostsForActor(actor.id);
+  const actC   = ACT_C[snap?.activityLevel] ?? 'var(--t2)';
+  const staC   = STA_C[snap?.stance] ?? 'var(--t2)';
+  const { data: xPosts } = useXPostsByActor(undefined, actor.id);
+  const { allDays } = useConflictDay();
   const dayActions = actor.recentActions.filter(a => a.date === currentDay);
+
+  const posts = xPosts ?? [];
 
   const tabs = [
     { value: 'intel'   as const, label: 'ACTOR INTELLIGENCE' },
-    { value: 'signals' as const, label: `𝕏 SIGNALS${xPosts.length > 0 ? ` (${xPosts.length})` : ''}` },
+    { value: 'signals' as const, label: `𝕏 SIGNALS${posts.length > 0 ? ` (${posts.length})` : ''}` },
   ];
+
+  if (!snap) return null;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -71,8 +76,9 @@ export function ActorDossier({ actor, tab, onTabChange, currentDay }: Props) {
         {/* Stance timeline */}
         <div className="flex items-center gap-1 mt-1">
           <span className="label text-[7px] text-[var(--t4)] mr-1">STANCE</span>
-          {CONFLICT_DAYS.map(day => {
+          {allDays.map(day => {
             const ds = getActorForDay(actor, day);
+            if (!ds) return null;
             const sc = STA_C[ds.stance] ?? 'var(--t2)';
             const isCurrent = day === currentDay;
             return (
@@ -84,7 +90,7 @@ export function ActorDossier({ actor, tab, onTabChange, currentDay }: Props) {
                   border: `1px solid ${isCurrent ? sc : 'transparent'}`,
                 }}
               >
-                <span className="mono text-[7px] font-bold" style={{ color: sc }}>{dayAbbrev(day)}</span>
+                <span className="mono text-[7px] font-bold" style={{ color: sc }}>{dayAbbrev(day, allDays)}</span>
                 <span className="text-[7px] font-bold tracking-[0.04em]" style={{ color: sc }}>{ds.stance}</span>
               </div>
             );
@@ -108,7 +114,7 @@ export function ActorDossier({ actor, tab, onTabChange, currentDay }: Props) {
         <TabsContent value="signals" className="flex-1 min-h-0 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="px-4 py-3">
-              {xPosts.length === 0 ? (
+              {posts.length === 0 ? (
                 <div className="p-12 text-center">
                   <span className="text-xl text-[var(--t3)]">𝕏</span>
                   <p className="label text-[var(--t3)] mt-2">
@@ -119,10 +125,10 @@ export function ActorDossier({ actor, tab, onTabChange, currentDay }: Props) {
                 <>
                   <div className="mb-2.5">
                     <span className="label text-[8px]">
-                      {xPosts.length} POSTS · PHAROS-CURATED · {actor.name.toUpperCase()}
+                      {posts.length} POSTS · PHAROS-CURATED · {actor.name.toUpperCase()}
                     </span>
                   </div>
-                  {xPosts.map(p => <XPostCard key={p.id} post={p as import('@/data/iranXPosts').XPost} />)}
+                  {posts.map(p => <XPostCard key={p.id} post={p as XPost} />)}
                 </>
               )}
             </div>

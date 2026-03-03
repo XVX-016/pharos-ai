@@ -6,7 +6,7 @@ import { Users } from 'lucide-react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { usePanelLayout } from '@/hooks/use-panel-layout';
 import { useConflictDay } from '@/hooks/use-conflict-day';
-import { ACTORS } from '@/data/iranActors';
+import { useActors } from '@/api/actors';
 import { ActorList } from '@/components/actors/ActorList';
 import { ActorDossier } from '@/components/actors/ActorDossier';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -22,7 +22,8 @@ export function ActorsContent() {
 
   useEffect(() => { if (initActor) setSelId(initActor); }, [initActor]);
 
-  const selected = ACTORS.find(a => a.id === selId) ?? null;
+  const { data: actors } = useActors();
+  const selected = actors?.find(a => a.id === selId) ?? null;
 
   return (
     <ResizablePanelGroup orientation="horizontal" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged} className="flex-1 min-w-0">

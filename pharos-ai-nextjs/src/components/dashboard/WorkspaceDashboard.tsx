@@ -7,17 +7,13 @@ import { ArrowRight, ArrowLeft, X as XIcon, Plus } from 'lucide-react';
 
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { fmtDate, fmtTimeZ } from '@/lib/format';
-import { CONFLICT } from '@/data/iranConflict';
-import { EVENTS } from '@/data/iranEvents';
-import { ACTORS, ACT_C, STA_C } from '@/data/iranActors';
-import { X_POSTS } from '@/data/iranXPosts';
+import { ACT_C, STA_C } from '@/data/iranActors';
 import XPostCard from '@/components/shared/XPostCard';
 import Flag from '@/components/shared/Flag';
 import { CasChip } from '@/app/dashboard/overview/CasChip';
 import { DaySelector } from '@/components/shared/DaySelector';
 import { getConflictForDay, getActorForDay, getEventsForDay, getPostsForDay } from '@/lib/day-filter';
-import type { ConflictDay } from '@/types/domain';
-import { CONFLICT_DAYS } from '@/types/domain';
+import type { ConflictDaySnapshot, IntelEvent, Actor, XPost } from '@/types/domain';
 
 import { useAppSelector, useAppDispatch } from '@/store';
 import {
@@ -33,7 +29,32 @@ import {
 } from '@/store/workspace-slice';
 import { ALL_WIDGET_KEYS, WIDGET_LABELS, PRESETS, type WidgetKey, type PresetId } from '@/store/presets';
 
-const DashDayCtx = createContext<ConflictDay>(CONFLICT_DAYS[CONFLICT_DAYS.length - 1]);
+import { useBootstrap } from '@/api/bootstrap';
+import { useConflict, useConflictDays } from '@/api/conflicts';
+import { useEvents } from '@/api/events';
+import { useActors } from '@/api/actors';
+import { useXPosts } from '@/api/x-posts';
+
+// Dashboard context — provides day + API data to all widgets
+interface DashData {
+  day: string;
+  conflict: any;
+  snapshots: ConflictDaySnapshot[];
+  events: IntelEvent[];
+  actors: Actor[];
+  xPosts: XPost[];
+  allDays: string[];
+}
+
+const DashCtx = createContext<DashData>({
+  day: '',
+  conflict: null,
+  snapshots: [],
+  events: [],
+  actors: [],
+  xPosts: [],
+  allDays: [],
+});
 
 const FullMapPage = dynamic(() => import('@/components/map/MapPageContent'),                           { ssr: false });
 
@@ -47,8 +68,9 @@ const SEV_CLS: Record<string, string> = {
 // ─── individual widgets ──────────────────────────────────────────────────────
 
 function SituationWidget() {
-  const day = useContext(DashDayCtx);
-  const snap = getConflictForDay(day);
+  const { day, snapshots, conflict } = useContext(DashCtx);
+  const snap = getConflictForDay(snapshots, day);
+  if (!snap) return null;
   return (
     <div className="h-full overflow-y-auto px-[18px] py-[14px]">
       <div className="mb-2.5">
@@ -60,11 +82,11 @@ function SituationWidget() {
       <div className="flex gap-3 mt-2.5">
         <div className="flex-1 px-3 py-2 bg-[var(--bg-2)] border border-[var(--bd)] [border-left:3px_solid_var(--blue)]">
           <div className="label text-[8px] mb-1 text-[var(--blue)]">US OBJECTIVE</div>
-          <p className="text-[11px] text-[var(--t2)] leading-snug">{CONFLICT.objectives.us}</p>
+          <p className="text-[11px] text-[var(--t2)] leading-snug">{conflict?.objectives?.us}</p>
         </div>
         <div className="flex-1 px-3 py-2 bg-[var(--bg-2)] border border-[var(--bd)] [border-left:3px_solid_var(--info)]">
           <div className="label text-[8px] mb-1 text-[var(--info)]">ISRAELI OBJECTIVE</div>
-          <p className="text-[11px] text-[var(--t2)] leading-snug">{CONFLICT.objectives.il}</p>
+          <p className="text-[11px] text-[var(--t2)] leading-snug">{conflict?.objectives?.il}</p>
         </div>
       </div>
       <div className="flex gap-[14px] mt-3 flex-wrap">
@@ -78,10 +100,10 @@ function SituationWidget() {
 }
 
 function LatestEventsWidget() {
-  const day = useContext(DashDayCtx);
+  const { day, events: allEvents, allDays } = useContext(DashCtx);
   const events = useMemo(
-    () => getEventsForDay(day).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 30),
-    [day],
+    () => getEventsForDay(allEvents, allDays, day).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 30),
+    [allEvents, allDays, day],
   );
   return (
     <div className="h-full overflow-y-auto">
@@ -114,11 +136,12 @@ function LatestEventsWidget() {
 }
 
 function ActorsWidget() {
-  const day = useContext(DashDayCtx);
+  const { day, actors } = useContext(DashCtx);
   return (
     <div className="h-full overflow-y-auto">
-      {ACTORS.map((actor, i) => {
+      {actors.map((actor, i) => {
         const snap = getActorForDay(actor, day);
+        if (!snap) return null;
         const actC = ACT_C[snap.activityLevel] ?? 'var(--t2)';
         const staC = STA_C[snap.stance] ?? 'var(--t2)';
         return (
@@ -126,7 +149,7 @@ function ActorsWidget() {
             <div
               className="flex items-start gap-[10px] px-[14px] py-2 cursor-pointer hover:bg-[var(--bg-3)] transition-colors"
               style={{
-                borderBottom: i < ACTORS.length - 1 ? '1px solid var(--bd-s)' : 'none',
+                borderBottom: i < actors.length - 1 ? '1px solid var(--bd-s)' : 'none',
                 borderLeft: `3px solid ${actC}`,
               }}
             >
@@ -157,12 +180,12 @@ function ActorsWidget() {
 }
 
 function SignalsWidget() {
-  const day = useContext(DashDayCtx);
-  const posts = useMemo(() => getPostsForDay(day).filter(p => p.significance === 'BREAKING').slice(0, 20), [day]);
+  const { day, xPosts, allDays } = useContext(DashCtx);
+  const posts = useMemo(() => getPostsForDay(xPosts, allDays, day).filter(p => p.significance === 'BREAKING').slice(0, 20), [xPosts, allDays, day]);
   return (
     <div className="h-full overflow-y-auto p-[10px]">
       {posts.map(p => (
-        <XPostCard key={p.id} post={p as import('@/data/iranXPosts').XPost} compact />
+        <XPostCard key={p.id} post={p as XPost} compact />
       ))}
     </div>
   );
@@ -175,8 +198,9 @@ function MapWidget({ full }: { full: boolean }) {
 
 // ── Key Facts ──
 function KeyFactsWidget() {
-  const day = useContext(DashDayCtx);
-  const snap = getConflictForDay(day);
+  const { day, snapshots } = useContext(DashCtx);
+  const snap = getConflictForDay(snapshots, day);
+  if (!snap) return null;
   return (
     <div className="h-full overflow-y-auto">
       {snap.keyFacts.map((fact, i) => (
@@ -195,8 +219,9 @@ function KeyFactsWidget() {
 
 // ── Casualties ──
 function CasualtiesWidget() {
-  const day = useContext(DashDayCtx);
-  const snap = getConflictForDay(day);
+  const { day, snapshots } = useContext(DashCtx);
+  const snap = getConflictForDay(snapshots, day);
+  if (!snap) return null;
   const cas = snap.casualties;
   const rows = [
     { label: 'US KIA',            val: cas.us.kia,              sub: `${cas.us.wounded} wounded`,             color: 'var(--blue)' },
@@ -224,17 +249,20 @@ function CasualtiesWidget() {
 
 // ── Commanders ──
 function CommandersWidget() {
+  const { conflict } = useContext(DashCtx);
+  const commanders = conflict?.commanders;
+  if (!commanders) return null;
   const sides = [
-    { label: 'US', color: 'var(--blue)',    names: CONFLICT.commanders.us },
-    { label: 'IDF', color: 'var(--info)',   names: CONFLICT.commanders.il },
-    { label: 'IRAN', color: 'var(--danger)', names: CONFLICT.commanders.ir },
+    { label: 'US', color: 'var(--blue)',    names: commanders.us ?? [] },
+    { label: 'IDF', color: 'var(--info)',   names: commanders.il ?? [] },
+    { label: 'IRAN', color: 'var(--danger)', names: commanders.ir ?? [] },
   ];
   return (
     <div className="h-full overflow-y-auto px-[18px] py-[14px]">
       {sides.map(side => (
         <div key={side.label} className="mb-5">
           <div className="label text-[8px] font-bold mb-2 tracking-[0.12em]" style={{ color: side.color }}>{side.label}</div>
-          {side.names.map((name, i) => (
+          {side.names.map((name: string, i: number) => (
             <div key={i} className="flex items-center gap-2 py-[5px]" style={{ borderBottom: '1px solid var(--bd-s)' }}>
               <div className="w-1 h-4 shrink-0" style={{ background: side.color, opacity: i === 0 ? 1 : 0.3 }} />
               <span className="text-[11px] text-[var(--t1)]">{name}</span>
@@ -257,7 +285,7 @@ function PredictionsWidget() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/polymarket')
+    fetch('/api/v1/predictions/markets')
       .then(r => r.json())
       .then((d: { markets: PMType[]; error?: string }) => {
         if (d.error) throw new Error(d.error);
@@ -342,9 +370,9 @@ function PredictionsWidget() {
 
 // ── Daily Brief ──
 function BriefWidget() {
-  const day = useContext(DashDayCtx);
-  const snap = getConflictForDay(day);
-  const dayEvents = getEventsForDay(day);
+  const { day, snapshots, events: allEvents, allDays, conflict } = useContext(DashCtx);
+  const snap = getConflictForDay(snapshots, day);
+  const dayEvents = useMemo(() => getEventsForDay(allEvents, allDays, day), [allEvents, allDays, day]);
   const topEvents = useMemo(
     () => [...dayEvents].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 8),
     [dayEvents],
@@ -352,6 +380,8 @@ function BriefWidget() {
 
   const critCount = dayEvents.filter(e => e.severity === 'CRITICAL').length;
   const highCount = dayEvents.filter(e => e.severity === 'HIGH').length;
+
+  if (!snap) return null;
 
   return (
     <div className="h-full overflow-y-auto">
@@ -428,11 +458,11 @@ function BriefWidget() {
         <div className="flex gap-3">
           <div className="flex-1 px-3 py-2 bg-[var(--bg-2)] border border-[var(--bd)]" style={{ borderLeft: '3px solid var(--blue)' }}>
             <div className="label text-[8px] mb-1 text-[var(--blue)]">US / COALITION</div>
-            <p className="text-[10px] text-[var(--t2)] leading-snug">{CONFLICT.objectives.us}</p>
+            <p className="text-[10px] text-[var(--t2)] leading-snug">{conflict?.objectives?.us}</p>
           </div>
           <div className="flex-1 px-3 py-2 bg-[var(--bg-2)] border border-[var(--bd)]" style={{ borderLeft: '3px solid var(--info)' }}>
             <div className="label text-[8px] mb-1 text-[var(--info)]">ISRAEL</div>
-            <p className="text-[10px] text-[var(--t2)] leading-snug">{CONFLICT.objectives.il}</p>
+            <p className="text-[10px] text-[var(--t2)] leading-snug">{conflict?.objectives?.il}</p>
           </div>
         </div>
       </div>
@@ -469,7 +499,23 @@ export function WorkspaceDashboard() {
   const dispatch = useAppDispatch();
   const { columns, activePreset, editing, columnSizes, rowSizes } = useAppSelector(s => s.workspace);
   const [mounted, setMounted] = useState(false);
-  const [dashDay, setDashDay] = useState<ConflictDay>(CONFLICT_DAYS[CONFLICT_DAYS.length - 1]);
+
+  const { data: bootstrap } = useBootstrap();
+  const allDays = bootstrap?.days ?? [];
+  const [dashDay, setDashDay] = useState<string>('');
+
+  // Set initial day once bootstrap data arrives
+  useEffect(() => {
+    if (allDays.length > 0 && !dashDay) {
+      setDashDay(allDays[allDays.length - 1]);
+    }
+  }, [allDays, dashDay]);
+
+  const { data: conflict } = useConflict();
+  const { data: snapshots } = useConflictDays();
+  const { data: events } = useEvents();
+  const { data: actors } = useActors();
+  const { data: xPosts } = useXPosts();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -480,6 +526,16 @@ export function WorkspaceDashboard() {
   if (!mounted) return null;
 
   const colSize = `${(100 / columns.length).toFixed(1)}%`;
+
+  const dashData: DashData = {
+    day: dashDay,
+    conflict: conflict ?? null,
+    snapshots: snapshots ?? [],
+    events: events ?? [],
+    actors: actors ?? [],
+    xPosts: xPosts ?? [],
+    allDays,
+  };
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-[var(--bg-1)]">
@@ -582,7 +638,7 @@ export function WorkspaceDashboard() {
       </div>
 
       {/* ── tiled layout ── */}
-      <DashDayCtx.Provider value={dashDay}>
+      <DashCtx.Provider value={dashData}>
       <ResizablePanelGroup
         orientation="horizontal"
         id="workspace-cols"
@@ -708,7 +764,7 @@ export function WorkspaceDashboard() {
           </React.Fragment>
         ))}
       </ResizablePanelGroup>
-      </DashDayCtx.Provider>
+      </DashCtx.Provider>
     </div>
   );
 }

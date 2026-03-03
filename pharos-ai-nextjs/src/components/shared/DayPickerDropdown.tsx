@@ -3,16 +3,18 @@
 import { Button } from '@/components/ui/button';
 import { PopoverContent } from '@/components/ui/popover';
 import { dayLabel, getEventsForDay, getConflictForDay } from '@/lib/day-filter';
-import type { ConflictDay } from '@/types/domain';
-import { CONFLICT_DAYS } from '@/types/domain';
+import type { IntelEvent, ConflictDaySnapshot } from '@/types/domain';
 
 type Props = {
-  currentDay: ConflictDay;
+  currentDay: string;
   allSelected?: boolean;
-  onSelect: (day: ConflictDay) => void;
+  onSelect: (day: string) => void;
+  allDays: string[];
+  events: IntelEvent[];
+  snapshots: ConflictDaySnapshot[];
 };
 
-export function DayPickerDropdown({ currentDay, allSelected, onSelect }: Props) {
+export function DayPickerDropdown({ currentDay, allSelected, onSelect, allDays, events, snapshots }: Props) {
   return (
     <PopoverContent
       align="start"
@@ -21,15 +23,15 @@ export function DayPickerDropdown({ currentDay, allSelected, onSelect }: Props) 
     >
       <div className="px-3 py-2 border-b border-[var(--bd)] bg-[var(--bg-2)]">
         <span className="mono text-[8px] font-bold text-[var(--t4)] tracking-[0.10em]">
-          CONFLICT TIMELINE — {CONFLICT_DAYS.length} DAYS
+          CONFLICT TIMELINE — {allDays.length} DAYS
         </span>
       </div>
 
       <div className="max-h-[280px] overflow-y-auto">
-        {CONFLICT_DAYS.map(day => {
+        {allDays.map(day => {
           const isActive = day === currentDay && !allSelected;
-          const snap = getConflictForDay(day);
-          const ec = getEventsForDay(day).length;
+          const snap = getConflictForDay(snapshots, day);
+          const ec = getEventsForDay(events, allDays, day).length;
           return (
             <Button
               key={day}
@@ -46,7 +48,7 @@ export function DayPickerDropdown({ currentDay, allSelected, onSelect }: Props) 
                 className="mono text-[10px] font-bold w-9 shrink-0"
                 style={{ color: isActive ? 'var(--danger)' : 'var(--t2)' }}
               >
-                {dayLabel(day)}
+                {dayLabel(day, allDays)}
               </span>
 
               <div className="flex-1 min-w-0">
@@ -64,27 +66,29 @@ export function DayPickerDropdown({ currentDay, allSelected, onSelect }: Props) 
                 </span>
               </div>
 
-              <div className="shrink-0 flex flex-col items-end gap-px">
-                <span
-                  className="mono text-[9px] font-bold"
-                  style={{
-                    color: snap.escalation >= 90 ? 'var(--danger)'
-                      : snap.escalation >= 80 ? 'var(--warning)' : 'var(--t3)',
-                  }}
-                >
-                  {snap.escalation}
-                </span>
-                <div className="w-7 h-[3px] bg-[var(--bg-3)] overflow-hidden">
-                  <div
-                    className="h-full"
+              {snap && (
+                <div className="shrink-0 flex flex-col items-end gap-px">
+                  <span
+                    className="mono text-[9px] font-bold"
                     style={{
-                      width: `${snap.escalation}%`,
-                      background: snap.escalation >= 90 ? 'var(--danger)'
-                        : snap.escalation >= 80 ? 'var(--warning)' : 'var(--info)',
+                      color: snap.escalation >= 90 ? 'var(--danger)'
+                        : snap.escalation >= 80 ? 'var(--warning)' : 'var(--t3)',
                     }}
-                  />
+                  >
+                    {snap.escalation}
+                  </span>
+                  <div className="w-7 h-[3px] bg-[var(--bg-3)] overflow-hidden">
+                    <div
+                      className="h-full"
+                      style={{
+                        width: `${snap.escalation}%`,
+                        background: snap.escalation >= 90 ? 'var(--danger)'
+                          : snap.escalation >= 80 ? 'var(--warning)' : 'var(--info)',
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </Button>
           );
         })}

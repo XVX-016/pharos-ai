@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import Flag from '@/components/shared/Flag';
 import { DaySelector } from '@/components/shared/DaySelector';
-import { ACTORS, ACT_C, STA_C, type Actor } from '@/data/iranActors';
-import { getPostsForActor } from '@/data/iranXPosts';
+import { ACT_C, STA_C } from '@/data/iranActors';
 import { getActorForDay } from '@/lib/day-filter';
-import type { ConflictDay } from '@/types/domain';
+import type { Actor, ConflictDay } from '@/types/domain';
+import { useActors } from '@/api/actors';
+import { useXPosts } from '@/api/x-posts';
 
 type Props = {
   selectedId: string | null;
@@ -19,16 +20,18 @@ type Props = {
 };
 
 export function ActorList({ selectedId, onSelect, currentDay, onDayChange }: Props) {
+  const { data: actors } = useActors();
+  const { data: allPosts } = useXPosts();
   // Sort actors by selected day's activity score
-  const sorted = [...ACTORS].sort((a, b) =>
-    getActorForDay(b, currentDay).activityScore - getActorForDay(a, currentDay).activityScore
+  const sorted = [...(actors ?? [])].sort((a, b) =>
+    (getActorForDay(b, currentDay)?.activityScore ?? 0) - (getActorForDay(a, currentDay)?.activityScore ?? 0)
   );
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="panel-header justify-between">
         <span className="section-title">Actors</span>
-        <Badge variant="outline" className="text-[9px] text-[var(--t4)] border-[var(--bd)]">{ACTORS.length}</Badge>
+        <Badge variant="outline" className="text-[9px] text-[var(--t4)] border-[var(--bd)]">{sorted.length}</Badge>
       </div>
 
       {/* Day selector */}
@@ -44,10 +47,11 @@ export function ActorList({ selectedId, onSelect, currentDay, onDayChange }: Pro
       <ScrollArea className="flex-1">
         {sorted.map((actor: Actor) => {
           const snap   = getActorForDay(actor, currentDay);
+          if (!snap) return null;
           const isOn   = selectedId === actor.id;
           const actC   = ACT_C[snap.activityLevel] ?? 'var(--t2)';
           const staC   = STA_C[snap.stance] ?? 'var(--t2)';
-          const xCount = getPostsForActor(actor.id).length;
+          const xCount = (allPosts ?? []).filter(p => p.actorId === actor.id).length;
           return (
             <Button
               key={actor.id}

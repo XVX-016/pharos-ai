@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 
 import TimelineTrack from '@/components/map/TimelineTrack';
 import { useTimelineDrag } from '@/hooks/use-timeline-drag';
-
-import { STRIKE_ARCS, MISSILE_TRACKS, TARGETS } from '@/data/mapData';
+import { useAppSelector } from '@/store';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -21,7 +20,6 @@ type Props = {
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 
-const EVENT_RECORDS = [...STRIKE_ARCS, ...MISSILE_TRACKS, ...TARGETS];
 const BUCKETS = 80;
 const DAY = 86400_000;
 const HOUR = 3600_000;
@@ -44,6 +42,8 @@ function fmt(ms: number) {
 // ─── Component ──────────────────────────────────────────────────────────────────
 
 export default function MapTimeline({ dataExtent, viewExtent, onViewExtent, timeRange, onTimeRange }: Props) {
+  const rawData = useAppSelector(s => s.map.rawData);
+
   const [vMin, vMax] = viewExtent;
   const span = vMax - vMin;
   const rng = timeRange ?? viewExtent;
@@ -53,16 +53,17 @@ export default function MapTimeline({ dataExtent, viewExtent, onViewExtent, time
 
   const histogram = useMemo(() => {
     const b = new Array(BUCKETS).fill(0);
-    if (span <= 0) return b;
+    if (span <= 0 || !rawData) return b;
+    const eventRecords = [...rawData.strikes, ...rawData.missiles, ...rawData.targets];
     const step = span / BUCKETS;
-    for (const r of EVENT_RECORDS) {
+    for (const r of eventRecords) {
       const t = new Date(r.timestamp).getTime();
       if (t < vMin || t > vMax) continue;
       b[Math.min(BUCKETS - 1, Math.max(0, Math.floor((t - vMin) / step)))]++;
     }
     const mx = Math.max(1, ...b);
     return b.map(v => v / mx);
-  }, [vMin, vMax, span]);
+  }, [vMin, vMax, span, rawData]);
 
   const ticks = useMemo(() => {
     const result: { label: string; pct: number }[] = [];

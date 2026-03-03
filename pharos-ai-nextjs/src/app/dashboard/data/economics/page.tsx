@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { ECONOMIC_INDEXES, ECON_CATEGORIES, type EconCategory } from '@/data/economicIndexes';
+import { ECON_CATEGORIES } from '@/data/economicIndexes';
+import type { EconCategory, EconomicIndex } from '@/types/domain';
+import { useEconomicIndexes } from '@/api/economics';
 import type { MarketResult } from '@/types/domain';
 import { IndexCard } from '@/components/economics/IndexCard';
 import { FocusedChart } from '@/components/economics/FocusedChart';
@@ -34,13 +36,16 @@ export default function EconomicsPage() {
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const { data: econIndexes } = useEconomicIndexes();
+  const ECONOMIC_INDEXES: EconomicIndex[] = econIndexes ?? [];
+
   const range = RANGES[rangeIdx];
 
   const fetchAll = useCallback(async () => {
     setRefreshing(true);
     try {
       const tickers = ECONOMIC_INDEXES.map(i => i.ticker).join(',');
-      const res = await fetch(`/api/markets?tickers=${encodeURIComponent(tickers)}&range=${range.key}&interval=${range.interval}`);
+      const res = await fetch(`/api/v1/markets?tickers=${encodeURIComponent(tickers)}&range=${range.key}&interval=${range.interval}`);
       const json = await res.json();
 
       const map = new Map<string, MarketResult>();

@@ -45,7 +45,7 @@ export function FocusedMarket({ market, group, onClose }: FocusedMarketProps) {
     setChartLoading(true);
     try {
       const r = RANGES[idx];
-      const res = await fetch(`/api/polymarket/history?tokenId=${encodeURIComponent(market.yesTokenId)}&range=${r.key}`);
+      const res = await fetch(`/api/v1/predictions/history?tokenId=${encodeURIComponent(market.yesTokenId)}&range=${r.key}`);
       const d = await res.json();
       setHistory(d.history ?? []);
     } catch {}
