@@ -131,6 +131,7 @@ export type AccountType = 'military' | 'government' | 'journalist' | 'analyst' |
 
 export interface XPost {
   id: string;
+  tweetId?: string;
   handle: string;
   displayName: string;
   avatar: string;

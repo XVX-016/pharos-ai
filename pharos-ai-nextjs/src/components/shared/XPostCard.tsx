@@ -1,5 +1,7 @@
 'use client';
+import { Suspense, useState } from 'react';
 import { AlertTriangle, CheckCircle, ExternalLink, Eye, Heart, Repeat2 } from 'lucide-react';
+import { Tweet } from 'react-tweet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -46,13 +48,24 @@ const IMG_LBL: Record<string, string> = {
   'uss-reagan-philippine-sea': 'USN · PHILIPPINE SEA',
 };
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Build the X post URL from handle + tweetId */
+function xUrl(handle: string, tweetId?: string): string | null {
+  if (!tweetId) return null;
+  const bare = handle.replace(/^@/, '');
+  return `https://x.com/${bare}/status/${tweetId}`;
+}
+
 type Props = { post: XPost; compact?: boolean };
 
 export default function XPostCard({ post, compact }: Props) {
+  const [showEmbed, setShowEmbed] = useState(false);
   const isBreaking = post.significance === 'BREAKING';
   const isHigh     = post.significance === 'HIGH';
   const acct       = ACCT[post.accountType] ?? ACCT.analyst;
   const border     = SIG_BORDER[post.significance] ?? SIG_BORDER.STANDARD;
+  const postUrl    = xUrl(post.handle, post.tweetId);
 
   return (
     <div className="card mb-2" style={{ borderLeft: `3px solid ${border}` }}>
@@ -75,109 +88,155 @@ export default function XPostCard({ post, compact }: Props) {
         </div>
       )}
 
-      {/* ── HEADER ── */}
-      <div className="card-header px-3 py-[9px]">
-        <Avatar
-          className="w-8 h-8 shrink-0"
-          style={{ background: post.avatarColor }}
-        >
-          <AvatarFallback
-            className="text-[10px] font-bold text-white rounded-full"
-            style={{ background: post.avatarColor }}
+      {/* ── View toggle (PHAROS / ORIGINAL) ── */}
+      {post.tweetId && !compact && (
+        <div className="flex items-center gap-1 px-3 py-[5px] border-b border-[var(--bd-s)]">
+          <button
+            onClick={() => setShowEmbed(false)}
+            className="mono text-[9px] px-2 py-0.5 rounded-sm transition-colors"
+            style={{
+              background: !showEmbed ? 'var(--blue-dim)' : 'transparent',
+              color: !showEmbed ? 'var(--blue-l)' : 'var(--t4)',
+              border: `1px solid ${!showEmbed ? 'color-mix(in srgb, var(--blue) 35%, transparent)' : 'var(--bd-s)'}`,
+            }}
           >
-            {post.avatar.slice(0, 2)}
-          </AvatarFallback>
-        </Avatar>
+            PHAROS
+          </button>
+          <button
+            onClick={() => setShowEmbed(true)}
+            className="mono text-[9px] px-2 py-0.5 rounded-sm transition-colors"
+            style={{
+              background: showEmbed ? 'var(--blue-dim)' : 'transparent',
+              color: showEmbed ? 'var(--blue-l)' : 'var(--t4)',
+              border: `1px solid ${showEmbed ? 'color-mix(in srgb, var(--blue) 35%, transparent)' : 'var(--bd-s)'}`,
+            }}
+          >
+            ORIGINAL
+          </button>
+        </div>
+      )}
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1">
-            <span className="text-xs font-bold text-[var(--t1)] leading-none">{post.displayName}</span>
-            {post.verified && (
-              <CheckCircle size={11} strokeWidth={2.5} className="text-[var(--blue-l)] shrink-0" />
+      {/* ── Embed view (react-tweet) ── */}
+      {showEmbed && post.tweetId ? (
+        <div data-theme="dark" className="px-1 py-2 [&_>_div]:!my-0">
+          <Suspense fallback={<EmbedSkeleton />}>
+            <Tweet id={post.tweetId} />
+          </Suspense>
+          {post.pharosNote && <PharosNote note={post.pharosNote} />}
+        </div>
+      ) : (
+        <>
+          {/* ── HEADER ── */}
+          <div className="card-header px-3 py-[9px]">
+            <Avatar
+              className="w-8 h-8 shrink-0"
+              style={{ background: post.avatarColor }}
+            >
+              <AvatarFallback
+                className="text-[10px] font-bold text-white rounded-full"
+                style={{ background: post.avatarColor }}
+              >
+                {post.avatar.slice(0, 2)}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-bold text-[var(--t1)] leading-none">{post.displayName}</span>
+                {post.verified && (
+                  <CheckCircle size={11} strokeWidth={2.5} className="text-[var(--blue-l)] shrink-0" />
+                )}
+              </div>
+              <span className="mono text-[var(--t4)]">{post.handle}</span>
+            </div>
+
+            <Badge
+              variant="outline"
+              className="text-[9px] px-[6px] py-0.5 rounded-sm shrink-0 border-transparent tracking-[0.05em]"
+              style={{ background: acct.bg, color: acct.text }}
+            >
+              {acct.label}
+            </Badge>
+
+            <span className="mono text-[var(--t4)] shrink-0">{ago(post.timestamp)}</span>
+          </div>
+
+          {/* ── BODY ── */}
+          <div className="card-body">
+            <p
+              className={`leading-snug whitespace-pre-wrap text-[var(--t1)]${compact ? ' line-clamp-3' : ''}`}
+              style={{ fontSize: compact ? 11.5 : 12.5 }}
+            >
+              {post.content}
+            </p>
+
+            {/* Images */}
+            {!compact && post.images && post.images.length > 0 && (
+              <div
+                className="mt-2.5 gap-[3px] grid"
+                style={{ gridTemplateColumns: post.images.length === 1 ? '1fr' : '1fr 1fr' }}
+              >
+                {post.images.map((img: string) => (
+                  <div
+                    key={img}
+                    className="relative overflow-hidden flex items-end p-1.5 border border-[var(--bd)]"
+                    style={{
+                      height: post.images!.length === 1 ? 130 : 80,
+                      background: IMG_BG[img] ?? 'var(--bg-app)',
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgba(0,0,0,0.65)]" />
+                    <span className="label relative uppercase text-[rgba(255,255,255,0.55)]">
+                      {IMG_LBL[img] ?? img}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Video placeholder */}
+            {!compact && post.videoThumb && (
+              <div
+                className="flex items-center justify-center relative mt-3 h-[90px] border border-[var(--bd)] bg-[var(--bg-app)]"
+              >
+                <div className="w-9 h-9 flex items-center justify-center border border-[var(--bd)] bg-white/[0.06]">
+                  <div
+                    className="ml-[2px]"
+                    style={{
+                      width: 0, height: 0,
+                      borderTop: '7px solid transparent',
+                      borderBottom: '7px solid transparent',
+                      borderLeft: '12px solid var(--t3)',
+                    }}
+                  />
+                </div>
+                <span className="label absolute bottom-2 left-3">VIDEO</span>
+              </div>
             )}
           </div>
-          <span className="mono text-[var(--t4)]">{post.handle}</span>
-        </div>
 
-        <Badge
-          variant="outline"
-          className="text-[9px] px-[6px] py-0.5 rounded-sm shrink-0 border-transparent tracking-[0.05em]"
-          style={{ background: acct.bg, color: acct.text }}
-        >
-          {acct.label}
-        </Badge>
-
-        <span className="mono text-[var(--t4)] shrink-0">{ago(post.timestamp)}</span>
-      </div>
-
-      {/* ── BODY ── */}
-      <div className="card-body">
-        <p
-          className={`leading-snug whitespace-pre-wrap text-[var(--t1)]${compact ? ' line-clamp-3' : ''}`}
-          style={{ fontSize: compact ? 11.5 : 12.5 }}
-        >
-          {post.content}
-        </p>
-
-        {/* Images */}
-        {!compact && post.images && post.images.length > 0 && (
-          <div
-            className="mt-2.5 gap-[3px] grid"
-            style={{ gridTemplateColumns: post.images.length === 1 ? '1fr' : '1fr 1fr' }}
-          >
-            {post.images.map((img: string) => (
-              <div
-                key={img}
-                className="relative overflow-hidden flex items-end p-1.5 border border-[var(--bd)]"
-                style={{
-                  height: post.images!.length === 1 ? 130 : 80,
-                  background: IMG_BG[img] ?? 'var(--bg-app)',
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgba(0,0,0,0.65)]" />
-                <span className="label relative uppercase text-[rgba(255,255,255,0.55)]">
-                  {IMG_LBL[img] ?? img}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Video placeholder */}
-        {!compact && post.videoThumb && (
-          <div
-            className="flex items-center justify-center relative mt-3 h-[90px] border border-[var(--bd)] bg-[var(--bg-app)]"
-          >
-            <div className="w-9 h-9 flex items-center justify-center border border-[var(--bd)] bg-white/[0.06]">
-              <div
-                className="ml-[2px]"
-                style={{
-                  width: 0, height: 0,
-                  borderTop: '7px solid transparent',
-                  borderBottom: '7px solid transparent',
-                  borderLeft: '12px solid var(--t3)',
-                }}
-              />
+          {/* ── FOOTER: engagement metrics ── */}
+          <Separator className="bg-[var(--bd-s)]" />
+          <div className="card-footer">
+            <EngStat icon={<Heart   size={10} strokeWidth={1.5} />} val={fmt(post.likes)}    />
+            <EngStat icon={<Repeat2 size={10} strokeWidth={1.5} />} val={fmt(post.retweets)} />
+            <EngStat icon={<Eye     size={10} strokeWidth={1.5} />} val={fmt(post.views)}    />
+            <div className="ml-auto">
+              {postUrl ? (
+                <a href={postUrl} target="_blank" rel="noopener noreferrer" title="View on 𝕏">
+                  <ExternalLink size={11} className="text-[var(--t4)] hover:text-[var(--blue-l)] transition-colors cursor-pointer" strokeWidth={1.5} />
+                </a>
+              ) : (
+                <ExternalLink size={11} className="text-[var(--t4)] opacity-30" strokeWidth={1.5} />
+              )}
             </div>
-            <span className="label absolute bottom-2 left-3">VIDEO</span>
           </div>
-        )}
-      </div>
 
-      {/* ── FOOTER: engagement metrics ── */}
-      <Separator className="bg-[var(--bd-s)]" />
-      <div className="card-footer">
-        <EngStat icon={<Heart   size={10} strokeWidth={1.5} />} val={fmt(post.likes)}    />
-        <EngStat icon={<Repeat2 size={10} strokeWidth={1.5} />} val={fmt(post.retweets)} />
-        <EngStat icon={<Eye     size={10} strokeWidth={1.5} />} val={fmt(post.views)}    />
-        <div className="ml-auto">
-          <ExternalLink size={11} className="text-[var(--t4)] cursor-pointer" strokeWidth={1.5} />
-        </div>
-      </div>
-
-      {/* ── PHAROS NOTE ── */}
-      {!compact && post.pharosNote && (
-        <PharosNote note={post.pharosNote} />
+          {/* ── PHAROS NOTE ── */}
+          {!compact && post.pharosNote && (
+            <PharosNote note={post.pharosNote} />
+          )}
+        </>
       )}
     </div>
   );
@@ -190,6 +249,14 @@ function EngStat({ icon, val }: { icon: React.ReactNode; val: string }) {
     <div className="flex items-center gap-1 text-[var(--t4)]">
       {icon}
       <span className="mono">{val}</span>
+    </div>
+  );
+}
+
+function EmbedSkeleton() {
+  return (
+    <div className="flex items-center justify-center py-8">
+      <div className="mono text-[10px] text-[var(--t4)]">Loading embed...</div>
     </div>
   );
 }

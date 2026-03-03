@@ -402,6 +402,7 @@ model EventActorResponse {
 model XPost {
   id           String           @id
   conflictId   String
+  tweetId      String?          @unique   // Real X/Twitter numeric ID for embeds
   handle       String
   displayName  String
   avatar       String
