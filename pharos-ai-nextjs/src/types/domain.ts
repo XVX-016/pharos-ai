@@ -72,6 +72,11 @@ export interface Actor {
   fullName: string;
   countryCode?: string;
   type: 'STATE' | 'NON-STATE' | 'ORGANIZATION' | 'INDIVIDUAL';
+  mapKey?: string;
+  cssVar?: string;
+  colorRgb?: number[];
+  affiliation?: 'FRIENDLY' | 'HOSTILE' | 'NEUTRAL';
+  mapGroup?: string;
   activityLevel: ActivityLevel;
   activityScore: number;
   stance: Stance;

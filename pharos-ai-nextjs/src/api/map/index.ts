@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { MapStory } from '@/types/domain';
 import type { StrikeArc, MissileTrack, Target, Asset, ThreatZone, HeatPoint } from '@/data/map-data';
 import type { DataArrays } from '@/lib/map-filter-engine';
+import type { ActorMeta } from '@/data/map-tokens';
 import { api } from '../client';
 import { queryKeys } from '../keys';
 
@@ -14,16 +15,20 @@ export type MapDataResponse = {
   assets: Asset[];
   threatZones: ThreatZone[];
   heatPoints: HeatPoint[];
+  actorMeta: Record<string, ActorMeta>;
 };
 
-function toDataArrays(r: MapDataResponse): DataArrays {
+export type MapDataResult = DataArrays & { actorMeta: Record<string, ActorMeta> };
+
+function toDataArrays(r: MapDataResponse): MapDataResult {
   return {
-    strikes:  r.strikes  ?? [],
-    missiles: r.missiles ?? [],
-    targets:  r.targets  ?? [],
-    assets:   r.assets   ?? [],
-    zones:    r.threatZones ?? [],
-    heat:     r.heatPoints  ?? [],
+    strikes:    r.strikes  ?? [],
+    missiles:   r.missiles ?? [],
+    targets:    r.targets  ?? [],
+    assets:     r.assets   ?? [],
+    zones:      r.threatZones ?? [],
+    heat:       r.heatPoints  ?? [],
+    actorMeta:  r.actorMeta ?? {},
   };
 }
 

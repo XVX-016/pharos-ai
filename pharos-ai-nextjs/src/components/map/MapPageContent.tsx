@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import '@/lib/deckgl-device';
 import DeckGL from '@deck.gl/react';
@@ -20,7 +20,7 @@ import { useMapStories } from '@/api/map';
 
 import { useMapFilters } from '@/hooks/use-map-filters';
 import { useMapLayers } from '@/hooks/use-map-layers';
-import { buildTooltip } from '@/lib/map-tooltip';
+import { createBuildTooltip } from '@/lib/map-tooltip';
 import { MAP_STYLE_DARK, MAP_STYLE_SAT } from '@/components/map/map-styles';
 
 import MapSidebar        from '@/components/map/MapSidebar';
@@ -62,8 +62,11 @@ export default function FullMapPage({ embedded = false }: { embedded?: boolean }
 
   const f = useMapFilters();
 
+  const tooltip = useMemo(() => createBuildTooltip(f.actorMeta), [f.actorMeta]);
+
   const layers = useMapLayers({
     filtered:    f.filtered,
+    actorMeta:   f.actorMeta,
     activeStory,
     isSatellite: mapStyle === 'satellite',
   });
@@ -102,7 +105,7 @@ export default function FullMapPage({ embedded = false }: { embedded?: boolean }
         <DeckGL
           viewState={{ ...viewState }}
           onViewStateChange={({ viewState: vs }) => { dispatch(setViewStateAction(vs as MapViewState)); }}
-          controller layers={layers} getTooltip={buildTooltip} onClick={handleMapClick}
+          controller layers={layers} getTooltip={tooltip} onClick={handleMapClick}
           style={{ width: '100%', height: '100%' }}
         >
           <Map mapStyle={mapStyle === 'dark' ? MAP_STYLE_DARK : MAP_STYLE_SAT} />

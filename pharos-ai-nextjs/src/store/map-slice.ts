@@ -152,6 +152,10 @@ const mapSlice = createSlice({
       if (state.filters.datasets.length === 0) {
         state.filters = initialFilters;
       }
+
+      // Default timeRange to last 24 hours of data
+      const oneDay = 86400_000;
+      state.filters.timeRange = [Math.max(dataExtent[0], dataExtent[1] - oneDay), dataExtent[1]];
     },
 
     // Filters

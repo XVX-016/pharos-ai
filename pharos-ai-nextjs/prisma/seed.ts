@@ -126,7 +126,22 @@ async function main() {
 
   // ─── 3. Actors + Day Snapshots + Actions ────────────────────────────────────
   console.log('3. Actors...');
+
+  // Display metadata keyed by actor ID
+  const ACTOR_DISPLAY: Record<string, {
+    mapKey: string | null; cssVar: string | null; colorRgb: number[];
+    affiliation: 'FRIENDLY' | 'HOSTILE' | 'NEUTRAL'; mapGroup: string;
+  }> = {
+    us:      { mapKey: 'US',     cssVar: 'var(--blue)',    colorRgb: [45,114,210],  affiliation: 'FRIENDLY', mapGroup: 'Coalition' },
+    idf:     { mapKey: 'ISRAEL', cssVar: 'var(--teal)',    colorRgb: [50,200,200],  affiliation: 'FRIENDLY', mapGroup: 'Coalition' },
+    iran:    { mapKey: 'IRAN',   cssVar: 'var(--danger)',  colorRgb: [231,106,110], affiliation: 'HOSTILE',  mapGroup: 'Adversary' },
+    irgc:    { mapKey: 'IRGC',   cssVar: 'var(--danger)',  colorRgb: [200,50,50],   affiliation: 'HOSTILE',  mapGroup: 'Adversary' },
+    houthis: { mapKey: 'HOUTHI', cssVar: 'var(--warning)', colorRgb: [236,154,60],  affiliation: 'HOSTILE',  mapGroup: 'Adversary' },
+    russia:  { mapKey: null,     cssVar: null,             colorRgb: [],            affiliation: 'NEUTRAL',  mapGroup: 'Observer'  },
+  };
+
   for (const actor of ACTORS) {
+    const display = ACTOR_DISPLAY[actor.id];
     await prisma.actor.create({
       data: {
         id: actor.id,
@@ -135,6 +150,13 @@ async function main() {
         fullName: actor.fullName,
         countryCode: actor.countryCode ?? null,
         type: mapActorType(actor.type),
+        ...(display ? {
+          mapKey:      display.mapKey,
+          cssVar:      display.cssVar,
+          colorRgb:    display.colorRgb,
+          affiliation: display.affiliation,
+          mapGroup:    display.mapGroup,
+        } : {}),
         activityLevel: actor.activityLevel,
         activityScore: actor.activityScore,
         stance: actor.stance,
@@ -177,6 +199,44 @@ async function main() {
     }
 
     console.log(`   ✓ ${actor.name} — ${Object.keys(actor.daySnapshots).length} snapshots, ${actor.recentActions.length} actions`);
+  }
+
+  // Create map-only actors (no intelligence data, just display metadata)
+  const NEW_ACTORS: {
+    id: string; name: string; fullName: string; type: 'STATE' | 'NON_STATE' | 'ORGANIZATION';
+    mapKey: string; cssVar: string; colorRgb: number[];
+    affiliation: 'FRIENDLY' | 'HOSTILE' | 'NEUTRAL'; mapGroup: string;
+  }[] = [
+    { id: 'nato',      name: 'NATO',       fullName: 'North Atlantic Treaty Organization', type: 'ORGANIZATION', mapKey: 'NATO',      cssVar: 'var(--cyber)',   colorRgb: [160,100,220], affiliation: 'FRIENDLY', mapGroup: 'Coalition' },
+    { id: 'usil',      name: 'US-IL Joint', fullName: 'US-Israel Joint Operations',        type: 'ORGANIZATION', mapKey: 'USIL',      cssVar: 'var(--blue)',    colorRgb: [45,114,210],  affiliation: 'FRIENDLY', mapGroup: 'Coalition' },
+    { id: 'hezbollah', name: 'Hezbollah',   fullName: 'Hezbollah',                         type: 'NON_STATE',    mapKey: 'HEZBOLLAH', cssVar: 'var(--danger)',  colorRgb: [180,40,40],   affiliation: 'HOSTILE',  mapGroup: 'Adversary' },
+    { id: 'pmf',       name: 'Iraqi PMF',   fullName: 'Popular Mobilization Forces',       type: 'NON_STATE',    mapKey: 'PMF',       cssVar: 'var(--warning)', colorRgb: [200,120,40],  affiliation: 'HOSTILE',  mapGroup: 'Adversary' },
+  ];
+
+  for (const a of NEW_ACTORS) {
+    await prisma.actor.create({
+      data: {
+        id: a.id,
+        conflictId: CONFLICT.id,
+        name: a.name,
+        fullName: a.fullName,
+        type: a.type,
+        mapKey: a.mapKey,
+        cssVar: a.cssVar,
+        colorRgb: a.colorRgb,
+        affiliation: a.affiliation,
+        mapGroup: a.mapGroup,
+        activityLevel: 'MODERATE',
+        activityScore: 0,
+        stance: 'NEUTRAL',
+        saying: '',
+        doing: [],
+        assessment: '',
+        keyFigures: [],
+        linkedEventIds: [],
+      },
+    });
+    console.log(`   ✓ ${a.name} (new map actor)`);
   }
 
   // ─── 4. Events + Sources + Actor Responses ──────────────────────────────────

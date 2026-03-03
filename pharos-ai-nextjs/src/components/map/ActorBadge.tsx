@@ -1,16 +1,20 @@
 'use client';
 
-import { ACTOR_META } from '@/data/map-tokens';
+import type { ActorMeta, ActorKey } from '@/data/map-tokens';
 
-import type { ActorKey } from '@/data/map-tokens';
-
-type Props = {
-  actor:     ActorKey;
-  isActive?: boolean;  // true = opaque chip, false = muted/ghost
+const FALLBACK_META: ActorMeta = {
+  label: '??', cssVar: 'var(--t3)', rgb: [143, 153, 168],
+  affiliation: 'NEUTRAL', group: 'Unknown',
 };
 
-export default function ActorBadge({ actor, isActive = true }: Props) {
-  const meta = ACTOR_META[actor];
+type Props = {
+  actor:      ActorKey;
+  actorMeta:  Record<string, ActorMeta>;
+  isActive?:  boolean;  // true = opaque chip, false = muted/ghost
+};
+
+export default function ActorBadge({ actor, actorMeta, isActive = true }: Props) {
+  const meta = actorMeta[actor] ?? FALLBACK_META;
 
   return (
     <span

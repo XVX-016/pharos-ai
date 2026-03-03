@@ -4,19 +4,32 @@ import { Button } from '@/components/ui/button';
 
 import { useMapData, useMapStories } from '@/api/map';
 
-import { ACTOR_META, CATEGORY_LABEL, STATUS_META } from '@/data/map-tokens';
+import { CATEGORY_LABEL, STATUS_META } from '@/data/map-tokens';
+import type { ActorMeta } from '@/data/map-tokens';
 import StoryIcon from './StoryIcon';
 
 import type { StrikeArc, MissileTrack, Target, Asset, ThreatZone } from '@/data/map-data';
 import type { MapStory } from '@/types/domain';
 import type { SelectedItem } from './MapDetailPanel';
 
+// ─── Fallback for unknown actors ────────────────────────────────────────────
+
+const FALLBACK_META: ActorMeta = {
+  label: '??', cssVar: 'var(--t3)', rgb: [143, 153, 168],
+  affiliation: 'NEUTRAL', group: 'Unknown',
+};
+
+function am(key: string, meta: Record<string, ActorMeta>): ActorMeta {
+  return meta[key] ?? FALLBACK_META;
+}
+
 // ─── Hook for cross-reference data ───────────────────────────────────────────
 
 function useMapCrossRefData() {
   const { data: rawData } = useMapData();
   const { data: stories = [] } = useMapStories();
-  return { rawData, stories };
+  const actorMeta = rawData?.actorMeta ?? {};
+  return { rawData, stories, actorMeta };
 }
 
 // ─── Atoms ────────────────────────────────────────────────────────────────────
@@ -53,12 +66,12 @@ export function SectionLabel({ children }: { children: React.ReactNode }) {
 
 // ─── Hierarchy breadcrumb ─────────────────────────────────────────────────────
 
-export function HierarchyBreadcrumb({ actor, category, type }: { actor: string; category: string; type: string }) {
-  const actorMeta = ACTOR_META[actor as keyof typeof ACTOR_META];
-  const catLabel  = CATEGORY_LABEL[category as keyof typeof CATEGORY_LABEL] ?? category;
+export function HierarchyBreadcrumb({ actor, category, type, actorMeta }: { actor: string; category: string; type: string; actorMeta: Record<string, ActorMeta> }) {
+  const m = am(actor, actorMeta);
+  const catLabel = CATEGORY_LABEL[category as keyof typeof CATEGORY_LABEL] ?? category;
   return (
     <div className="flex items-center gap-1 mono" style={{ fontSize: 9, marginBottom: 10, flexWrap: 'wrap' }}>
-      <span style={{ color: actorMeta?.cssVar ?? 'var(--t3)', fontWeight: 700 }}>{actorMeta?.label ?? actor}</span>
+      <span style={{ color: m.cssVar, fontWeight: 700 }}>{m.label}</span>
       <span style={{ color: 'var(--bd)' }}>›</span>
       <span style={{ color: 'var(--t3)' }}>{catLabel}</span>
       <span style={{ color: 'var(--bd)' }}>›</span>
@@ -101,7 +114,7 @@ export function RelatedStories({ stories, onActivate }: { stories: MapStory[]; o
             <StoryIcon iconName={story.iconName} category={story.category} size={12} boxSize={22} />
             <div className="flex-1 min-w-0">
               <p style={{ fontSize: 11, color: 'var(--t2)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{story.title}</p>
-              <p className="mono" style={{ fontSize: 9, color: ACTOR_META.US.cssVar, marginTop: 1 }}>{story.category}</p>
+              <p className="mono" style={{ fontSize: 9, color: 'var(--blue)', marginTop: 1 }}>{story.category}</p>
             </div>
             <span style={{ color: 'var(--t4)', fontSize: 10 }}>›</span>
           </Button>
@@ -118,16 +131,16 @@ export function StrikeContent({ d, onSelectItem, onActivateStory }: {
   onSelectItem: (i: SelectedItem) => void;
   onActivateStory: (s: MapStory) => void;
 }) {
-  const { rawData, stories } = useMapCrossRefData();
+  const { rawData, stories, actorMeta } = useMapCrossRefData();
   const relatedTarget  = rawData ? targetForStrike(d, rawData.targets) : null;
   const relatedStories = storiesFor([d.id], 'highlightStrikeIds', stories);
   const statusMeta     = STATUS_META[d.status];
 
   return (
     <>
-      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} />
+      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} actorMeta={actorMeta} />
       <div className="flex gap-1 flex-wrap" style={{ marginBottom: 14 }}>
-        <Badge label={d.type.replace('_', ' ')} color={ACTOR_META[d.actor].cssVar} />
+        <Badge label={d.type.replace('_', ' ')} color={am(d.actor, actorMeta).cssVar} />
         <Badge label={d.severity}               color={d.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)'} />
         <Badge label={statusMeta.label}          color={statusMeta.cssVar} />
       </div>
@@ -160,19 +173,20 @@ export function MissileContent({ d, onActivateStory }: {
   d: MissileTrack;
   onActivateStory: (s: MapStory) => void;
 }) {
-  const { stories } = useMapCrossRefData();
+  const { stories, actorMeta } = useMapCrossRefData();
   const relatedStories = storiesFor([d.id], 'highlightMissileIds', stories);
   const isIntercepted  = d.status === 'INTERCEPTED';
   const statusColor    = isIntercepted ? 'var(--warning)' : 'var(--danger)';
+  const m = am(d.actor, actorMeta);
 
   return (
     <>
-      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} />
+      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} actorMeta={actorMeta} />
       <div className="flex gap-1 flex-wrap" style={{ marginBottom: 14 }}>
         <Badge label={isIntercepted ? '✓ INTERCEPTED' : '⚠ IMPACT CONFIRMED'} color={statusColor} />
         <Badge label={d.severity} color={d.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)'} />
       </div>
-      <Row label="ACTOR"        value={ACTOR_META[d.actor].label} color={ACTOR_META[d.actor].cssVar} />
+      <Row label="ACTOR"        value={m.label} color={m.cssVar} />
       <Row label="LAUNCH POINT" value={`[${d.from[1].toFixed(2)}°N, ${d.from[0].toFixed(2)}°E]`} />
       <Row label="IMPACT POINT" value={`[${d.to[1].toFixed(2)}°N, ${d.to[0].toFixed(2)}°E]`} />
       <Divider />
@@ -194,41 +208,44 @@ export function TargetContent({ d, onSelectItem, onActivateStory }: {
   onSelectItem: (i: SelectedItem) => void;
   onActivateStory: (s: MapStory) => void;
 }) {
-  const { rawData, stories } = useMapCrossRefData();
+  const { rawData, stories, actorMeta } = useMapCrossRefData();
   const statusMeta     = STATUS_META[d.status];
-  const actorMeta      = ACTOR_META[d.actor];
+  const m              = am(d.actor, actorMeta);
   const incomingStrikes = rawData ? strikesForTarget(d, rawData.strikes) : [];
   const relatedStories = storiesFor([d.id], 'highlightTargetIds', stories);
 
   return (
     <>
-      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} />
+      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} actorMeta={actorMeta} />
       <div className="flex gap-1 flex-wrap" style={{ marginBottom: 12 }}>
-        <Badge label={d.type.replace('_', ' ')} color={actorMeta.cssVar} />
+        <Badge label={d.type.replace('_', ' ')} color={m.cssVar} />
         <Badge label={d.status}                 color={statusMeta.cssVar} />
       </div>
       <p style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.6, marginBottom: 12 }}>{d.description}</p>
-      <Row label="ACTOR"       value={actorMeta.label} color={actorMeta.cssVar} />
+      <Row label="ACTOR"       value={m.label} color={m.cssVar} />
       <Row label="COORDINATES" value={`${d.position[1].toFixed(4)}°N, ${d.position[0].toFixed(4)}°E`} />
       {incomingStrikes.length > 0 && (
         <>
           <Divider />
           <SectionLabel>INCOMING STRIKES ({incomingStrikes.length})</SectionLabel>
           <div className="flex flex-col gap-1">
-            {incomingStrikes.map(strike => (
-              <Button variant="ghost" key={strike.id} onClick={() => onSelectItem({ type: 'strike', data: strike })}
-                className="flex items-center gap-2 w-full text-left hover:border-[var(--bd)] transition-colors" style={{ background: 'var(--bg-1)', border: '1px solid var(--bd-s)', borderRadius: 2, padding: '6px 8px' }}
-              >
-                <div style={{ width: 10, height: 3, background: ACTOR_META[strike.actor].cssVar, flexShrink: 0 }} />
-                <div className="flex-1 min-w-0">
-                  <p style={{ fontSize: 10, color: 'var(--t2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{strike.label}</p>
-                  <p className="mono" style={{ fontSize: 9, color: ACTOR_META[strike.actor].cssVar, marginTop: 1 }}>
-                    {ACTOR_META[strike.actor].label} · {strike.type.replace('_', ' ')} · {strike.severity}
-                  </p>
-                </div>
-                <span style={{ color: 'var(--t4)' }}>›</span>
-              </Button>
-            ))}
+            {incomingStrikes.map(strike => {
+              const sm = am(strike.actor, actorMeta);
+              return (
+                <Button variant="ghost" key={strike.id} onClick={() => onSelectItem({ type: 'strike', data: strike })}
+                  className="flex items-center gap-2 w-full text-left hover:border-[var(--bd)] transition-colors" style={{ background: 'var(--bg-1)', border: '1px solid var(--bd-s)', borderRadius: 2, padding: '6px 8px' }}
+                >
+                  <div style={{ width: 10, height: 3, background: sm.cssVar, flexShrink: 0 }} />
+                  <div className="flex-1 min-w-0">
+                    <p style={{ fontSize: 10, color: 'var(--t2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{strike.label}</p>
+                    <p className="mono" style={{ fontSize: 9, color: sm.cssVar, marginTop: 1 }}>
+                      {sm.label} · {strike.type.replace('_', ' ')} · {strike.severity}
+                    </p>
+                  </div>
+                  <span style={{ color: 'var(--t4)' }}>›</span>
+                </Button>
+              );
+            })}
           </div>
         </>
       )}
@@ -241,25 +258,25 @@ export function AssetContent({ d, onActivateStory }: {
   d: Asset;
   onActivateStory: (s: MapStory) => void;
 }) {
-  const { stories } = useMapCrossRefData();
-  const actorMeta      = ACTOR_META[d.actor];
+  const { stories, actorMeta } = useMapCrossRefData();
+  const m              = am(d.actor, actorMeta);
   const relatedStories = storiesFor([d.id], 'highlightAssetIds', stories);
 
   return (
     <>
-      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} />
+      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} actorMeta={actorMeta} />
       <div className="flex gap-1 flex-wrap" style={{ marginBottom: 12 }}>
-        <Badge label={actorMeta.label}                color={actorMeta.cssVar} />
-        <Badge label={d.type.replace('_', ' ')}       color="var(--t3)" />
-        <Badge label={STATUS_META[d.status].label}     color={STATUS_META[d.status].cssVar} />
+        <Badge label={m.label}                    color={m.cssVar} />
+        <Badge label={d.type.replace('_', ' ')}   color="var(--t3)" />
+        <Badge label={STATUS_META[d.status].label} color={STATUS_META[d.status].cssVar} />
         {d.type === 'CARRIER' && <Badge label="CARRIER STRIKE GROUP" color="var(--warning)" />}
       </div>
       {d.description && (
         <p style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.6, marginBottom: 12 }}>{d.description}</p>
       )}
       <Row label="COORDINATES"  value={`${d.position[1].toFixed(2)}°N, ${d.position[0].toFixed(2)}°E`} />
-      <Row label="NATION/ACTOR" value={actorMeta.label} color={actorMeta.cssVar} />
-      <Row label="AFFILIATION"  value={actorMeta.affiliation} color="var(--success)" />
+      <Row label="NATION/ACTOR" value={m.label} color={m.cssVar} />
+      <Row label="AFFILIATION"  value={m.affiliation} color="var(--success)" />
       <RelatedStories stories={relatedStories} onActivate={onActivateStory} />
     </>
   );
@@ -273,20 +290,21 @@ const ZONE_META: Record<ThreatZone['type'], { color: string; label: string; desc
 };
 
 export function ZoneContent({ d }: { d: ThreatZone }) {
-  const meta     = ZONE_META[d.type];
-  const actorMeta = ACTOR_META[d.actor];
+  const { actorMeta } = useMapCrossRefData();
+  const meta = ZONE_META[d.type];
+  const m    = am(d.actor, actorMeta);
   return (
     <>
-      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} />
+      <HierarchyBreadcrumb actor={d.actor} category={d.category} type={d.type} actorMeta={actorMeta} />
       <div className="flex gap-1 flex-wrap" style={{ marginBottom: 12 }}>
-        <Badge label={meta.label}      color={meta.color} />
-        <Badge label={actorMeta.label} color={actorMeta.cssVar} />
+        <Badge label={meta.label} color={meta.color} />
+        <Badge label={m.label}    color={m.cssVar} />
       </div>
       <div style={{ background: `color-mix(in srgb, ${meta.color} 6%, transparent)`, border: `1px solid color-mix(in srgb, ${meta.color} 25%, transparent)`, borderRadius: 2, padding: '10px 12px', marginBottom: 12 }}>
         <p style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.6 }}>{meta.description}</p>
       </div>
       <Row label="ZONE TYPE"  value={d.type.replace('_', ' ')} color={meta.color} />
-      <Row label="CONTROLLED BY" value={actorMeta.label} color={actorMeta.cssVar} />
+      <Row label="CONTROLLED BY" value={m.label} color={m.cssVar} />
       <Row label="VERTICES"   value={`${d.coordinates.length} points`} />
     </>
   );

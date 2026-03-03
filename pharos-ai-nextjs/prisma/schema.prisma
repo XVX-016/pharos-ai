@@ -120,6 +120,12 @@ enum EconCategory {
   SHIPPING
 }
 
+enum Affiliation {
+  FRIENDLY
+  HOSTILE
+  NEUTRAL
+}
+
 enum MapFeatureType {
   STRIKE_ARC
   MISSILE_TRACK
@@ -261,6 +267,13 @@ model Actor {
   fullName      String
   countryCode   String?
   type          ActorType
+
+  // Display metadata (drives map colors, labels, affiliation)
+  mapKey       String?       @unique
+  cssVar       String?
+  colorRgb     Int[]
+  affiliation  Affiliation?
+  mapGroup     String?
 
   // Current / latest snapshot fields
   activityLevel ActivityLevel

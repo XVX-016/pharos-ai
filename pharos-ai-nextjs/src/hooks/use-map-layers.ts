@@ -2,16 +2,23 @@ import { useMemo } from 'react';
 import { ArcLayer, ScatterplotLayer, TextLayer, PolygonLayer } from '@deck.gl/layers';
 import { HeatmapLayer } from '@deck.gl/aggregation-layers';
 
-import { ACTOR_META, NAVAL_RGB, STATUS_META } from '@/data/map-tokens';
+import { NAVAL_RGB, STATUS_META } from '@/data/map-tokens';
 
+import type { ActorMeta } from '@/data/map-tokens';
 import type { StrikeArc, MissileTrack, Target, Asset, ThreatZone, HeatPoint } from '@/data/map-data';
 import type { FilteredData } from './use-map-filters';
 import type { MapStory } from '@/types/domain';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+const FALLBACK_META: ActorMeta = {
+  label: '??', cssVar: 'var(--t3)', rgb: [143, 153, 168],
+  affiliation: 'NEUTRAL', group: 'Unknown',
+};
+
 type Props = {
   filtered:    FilteredData;
+  actorMeta:   Record<string, ActorMeta>;
   activeStory: MapStory | null;
   isSatellite: boolean;
 };
@@ -23,15 +30,15 @@ type RGBA = [number, number, number, number];
 /** Returns full-opacity alpha for the current render mode. */
 const activeAlpha = (isSatellite: boolean) => (isSatellite ? 255 : 220);
 
-/** Wraps an RGB tuple with a given alpha. */
-const withAlpha = (rgb: [number, number, number], a: number): RGBA => [rgb[0], rgb[1], rgb[2], a];
+/** Wraps an RGB array with a given alpha. */
+const withAlpha = (rgb: number[], a: number): RGBA => [rgb[0] ?? 0, rgb[1] ?? 0, rgb[2] ?? 0, a];
 
 /** Dim alpha when story is active and this item is not highlighted. */
 const DIM = 40;
 
 /** Actor-driven color, dimmed when not in active story's highlight set. */
 function actorColor(
-  rgb: [number, number, number],
+  rgb: number[],
   id: string,
   highlightIds: string[],
   isDimActive: boolean,
@@ -55,7 +62,7 @@ function statusFill(status: Target['status'] | Asset['status']): [number, number
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useMapLayers({ filtered, activeStory, isSatellite }: Props): any[] {
+export function useMapLayers({ filtered, actorMeta, activeStory, isSatellite }: Props): any[] {
   return useMemo(() => {
     const alpha    = activeAlpha(isSatellite);
     const dimActive = activeStory !== null;
@@ -108,7 +115,7 @@ export function useMapLayers({ filtered, activeStory, isSatellite }: Props): any
       getSourcePosition: (d: StrikeArc): [number, number] => d.from,
       getTargetPosition: (d: StrikeArc): [number, number] => d.to,
       getSourceColor: (d: StrikeArc): RGBA => {
-        const rgb = d.type === 'NAVAL_STRIKE' ? NAVAL_RGB : ACTOR_META[d.actor].rgb;
+        const rgb = d.type === 'NAVAL_STRIKE' ? NAVAL_RGB : (actorMeta[d.actor] ?? FALLBACK_META).rgb;
         return highlighted(d.id, activeStory?.highlightStrikeIds ?? [])
           ? withAlpha(rgb, alpha)
           : withAlpha(rgb, DIM);
@@ -136,9 +143,9 @@ export function useMapLayers({ filtered, activeStory, isSatellite }: Props): any
       getSourcePosition: (d: MissileTrack): [number, number] => d.from,
       getTargetPosition: (d: MissileTrack): [number, number] => d.to,
       getSourceColor: (d: MissileTrack): RGBA =>
-        actorColor(ACTOR_META[d.actor].rgb, d.id, activeStory?.highlightMissileIds ?? [], dimActive, alpha),
+        actorColor((actorMeta[d.actor] ?? FALLBACK_META).rgb, d.id, activeStory?.highlightMissileIds ?? [], dimActive, alpha),
       getTargetColor: (d: MissileTrack): RGBA => {
-        if (dimActive && !(activeStory?.highlightMissileIds ?? []).includes(d.id)) return withAlpha(ACTOR_META[d.actor].rgb, DIM);
+        if (dimActive && !(activeStory?.highlightMissileIds ?? []).includes(d.id)) return withAlpha((actorMeta[d.actor] ?? FALLBACK_META).rgb, DIM);
         return d.status === 'INTERCEPTED' ? [255, 200, 0, alpha] : [255, 50, 50, alpha];
       },
       getWidth: (d: MissileTrack): number =>
@@ -183,7 +190,7 @@ export function useMapLayers({ filtered, activeStory, isSatellite }: Props): any
       getPosition:  (d: Asset): [number, number] => d.position,
       getRadius:    (d: Asset): number => (d.type === 'CARRIER' ? 20000 : 14000),
       getFillColor: (d: Asset): RGBA =>
-        actorColor(ACTOR_META[d.actor].rgb, d.id, activeStory?.highlightAssetIds ?? [], dimActive, alpha),
+        actorColor((actorMeta[d.actor] ?? FALLBACK_META).rgb, d.id, activeStory?.highlightAssetIds ?? [], dimActive, alpha),
       stroked: true,
       getLineColor: (): RGBA => [255, 255, 255, isSatellite ? 220 : 150],
       lineWidthMinPixels: strokeWidth,
@@ -222,7 +229,7 @@ export function useMapLayers({ filtered, activeStory, isSatellite }: Props): any
       getText:           (d: Asset): string => d.name,
       getSize:           isSatellite ? 11 : 10,
       getColor:          (d: Asset): RGBA => {
-        const [r, g, b] = ACTOR_META[d.actor].rgb;
+        const [r, g, b] = (actorMeta[d.actor] ?? FALLBACK_META).rgb;
         return isSatellite ? [r + 40, g + 40, b + 40, 255] : [r, g, b, 200];
       },
       getPixelOffset:    (): [number, number] => [0, -22],
@@ -237,7 +244,7 @@ export function useMapLayers({ filtered, activeStory, isSatellite }: Props): any
     });
 
     return [heatLayer, zoneLayer, strikeLayer, missileLayer, targetLayer, assetLayer, targetLabels, assetLabels].filter(Boolean);
-  }, [filtered, activeStory, isSatellite]);
+  }, [filtered, actorMeta, activeStory, isSatellite]);
 }
 
 // Re-export so tooltip handler can share STATUS_META without another import

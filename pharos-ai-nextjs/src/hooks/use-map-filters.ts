@@ -18,8 +18,8 @@ import { selectFilterState, selectIsFiltered } from '@/store/map-selectors';
 
 import { useMapData } from '@/api/map';
 import { applyFilters, extractInitialState, extractTimeExtent } from '@/lib/map-filter-engine';
-import { ACTOR_META } from '@/data/map-tokens';
 
+import type { ActorMeta } from '@/data/map-tokens';
 import type { DataArrays, FilterState, FilteredData, FilterFacets } from '@/lib/map-filter-engine';
 
 // ─── Re-exports ─────────────────────────────────────────────────────────────────
@@ -49,6 +49,7 @@ export type UseMapFiltersReturn = {
   state:    FilterState;
   filtered: FilteredData;
   facets:   FilterFacets;
+  actorMeta: Record<string, ActorMeta>;
   rawData:  DataArrays | undefined;
   /** Absolute min/max of all timestamped data */
   dataExtent:   [number, number];
@@ -77,7 +78,9 @@ export function useMapFilters(): UseMapFiltersReturn {
   const filterState: FilterState = useAppSelector(selectFilterState);
 
   // Server state via TanStack Query
-  const { data: rawData, isLoading } = useMapData();
+  const { data: mapResult, isLoading } = useMapData();
+  const rawData = mapResult;
+  const actorMeta = mapResult?.actorMeta ?? {};
 
   // Initialize Redux filter state once data arrives
   useEffect(() => {
@@ -92,8 +95,8 @@ export function useMapFilters(): UseMapFiltersReturn {
 
   // Compute filtered data + facets locally (replaces selectFilteredData)
   const { filtered, facets } = useMemo(
-    () => rawData ? applyFilters(rawData, filterState, ACTOR_META) : EMPTY_RESULT,
-    [rawData, filterState],
+    () => rawData ? applyFilters(rawData, filterState, actorMeta) : EMPTY_RESULT,
+    [rawData, filterState, actorMeta],
   );
 
   // Extract dataset types from rawData for toggleDataset
@@ -111,6 +114,7 @@ export function useMapFilters(): UseMapFiltersReturn {
     state: filterState,
     filtered,
     facets,
+    actorMeta,
     rawData,
     dataExtent,
     viewExtent,

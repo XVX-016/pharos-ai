@@ -9,25 +9,14 @@
 // ─── Level 1: Actor ───────────────────────────────────────────────────────────
 
 export type ActorKey = string;
-export type Affiliation = 'FRIENDLY' | 'HOSTILE';
+export type Affiliation = 'FRIENDLY' | 'HOSTILE' | 'NEUTRAL';
 
 export type ActorMeta = {
   label: string;
   cssVar: string;                    // CSS variable — used in React components
-  rgb: [number, number, number];     // Raw RGB — used in deck.gl layer accessors
+  rgb: number[];     // Raw RGB — used in deck.gl layer accessors
   affiliation: Affiliation;
   group: string;
-};
-
-export const ACTOR_META: Record<string, ActorMeta> = {
-  US:        { label: 'United States', cssVar: 'var(--blue)',    rgb: [45,  114, 210], affiliation: 'FRIENDLY', group: 'Coalition' },
-  ISRAEL:    { label: 'Israel (IDF)',  cssVar: 'var(--teal)',    rgb: [50,  200, 200], affiliation: 'FRIENDLY', group: 'Coalition' },
-  NATO:      { label: 'NATO',          cssVar: 'var(--cyber)',   rgb: [160, 100, 220], affiliation: 'FRIENDLY', group: 'Coalition' },
-  IRAN:      { label: 'Iran',          cssVar: 'var(--danger)',  rgb: [231, 106, 110], affiliation: 'HOSTILE',  group: 'Adversary' },
-  IRGC:      { label: 'IRGC',         cssVar: 'var(--danger)',  rgb: [200,  50,  50], affiliation: 'HOSTILE',  group: 'Adversary' },
-  HOUTHI:    { label: 'Houthi',        cssVar: 'var(--warning)', rgb: [236, 154,  60], affiliation: 'HOSTILE',  group: 'Adversary' },
-  HEZBOLLAH: { label: 'Hezbollah',     cssVar: 'var(--danger)',  rgb: [180,  40,  40], affiliation: 'HOSTILE',  group: 'Adversary' },
-  PMF:       { label: 'Iraqi PMF',     cssVar: 'var(--warning)', rgb: [200, 120,  40], affiliation: 'HOSTILE',  group: 'Adversary' },
 };
 
 // ─── Level 2: Category ────────────────────────────────────────────────────────

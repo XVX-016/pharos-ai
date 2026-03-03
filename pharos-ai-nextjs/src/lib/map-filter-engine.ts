@@ -1,4 +1,4 @@
-import { ACTOR_META, TYPE_META, STATUS_META, PRIORITY_META } from '@/data/map-tokens';
+import { TYPE_META, STATUS_META, PRIORITY_META } from '@/data/map-tokens';
 
 import type { StrikeArc, MissileTrack, Target, Asset, ThreatZone, HeatPoint } from '@/data/map-data';
 import type { ActorMeta } from '@/data/map-tokens';
@@ -130,7 +130,7 @@ export function extractTimeExtent(data: DataArrays): [number, number] {
 export function applyFilters(
   data: DataArrays,
   state: FilterState,
-  am: Record<string, ActorMeta> = ACTOR_META,
+  am: Record<string, ActorMeta>,
 ): { filtered: FilteredData; facets: FilterFacets } {
 
   const inTime = (item: DataItem): boolean => {
