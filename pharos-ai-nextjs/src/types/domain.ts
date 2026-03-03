@@ -5,8 +5,7 @@
 
 // ── Conflict Days ────────────────────────────────────────────────────────────
 
-export type ConflictDay = '2026-02-28' | '2026-03-01' | '2026-03-02';
-export const CONFLICT_DAYS: ConflictDay[] = ['2026-02-28', '2026-03-01', '2026-03-02'];
+export type ConflictDay = string;
 
 export interface ActorDaySnapshot {
   activityLevel: ActivityLevel;

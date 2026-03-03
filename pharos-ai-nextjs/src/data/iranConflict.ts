@@ -11,7 +11,7 @@ export const CONFLICT = {
   region:        'Iran / Persian Gulf / Middle East',
   escalation:    94,
 
-  summary: `On February 28, 2026, the United States and Israel launched a coordinated joint strike on Iran — the most ambitious Western military operation against the Islamic Republic since its founding. Codenamed Operation Epic Fury by the Pentagon and Operation Roaring Lion by the IDF, the campaign targeted Iranian nuclear facilities, ballistic missile infrastructure, air defense networks, and regime leadership. Supreme Leader Ali Khamenei was killed when his compound in Tehran was struck. 48 Iranian leaders have been killed. Iran responded with Operation True Promise 4 — launching 700+ drones and hundreds of missiles at targets in 9+ countries. 4 US service members have been killed and 18 wounded. 10 Israeli civilians killed. On Day 3, Hezbollah entered the war from Lebanon, an Iranian drone struck RAF Akrotiri in Cyprus (first attack on NATO territory), QatarEnergy halted all LNG production after strikes on Ras Laffan and Mesaieed, and Saudi Aramco shut Ras Tanura refinery. Iran's death toll stands at 555 across 131 cities. The Pentagon confirmed 1,000+ targets hit in the first 24 hours and "tens of thousands of pieces of ordnance" delivered. Trump says "the big wave hasn't even happened yet" and doesn't rule out boots on ground. MBS vowed military force against further Iranian incursions. Operations are ongoing.`,
+  summary: `On February 28, 2026, the United States and Israel launched a coordinated joint strike on Iran — the most ambitious Western military operation against the Islamic Republic since its founding. Codenamed Operation Epic Fury by the Pentagon and Operation Roaring Lion by the IDF, the campaign targeted Iranian nuclear facilities, ballistic missile infrastructure, air defense networks, and regime leadership. Supreme Leader Ali Khamenei was killed when his compound in Tehran was struck. 48 Iranian leaders have been killed. Iran responded with Operation True Promise 4 — launching 700+ drones and hundreds of missiles at targets in 9+ countries, killing 6 US service members and 11 Israeli civilians. On Day 3, Hezbollah entered the war and Israel launched a ground incursion into southern Lebanon (40 killed, 246 injured, 30K displaced). Iran struck the US Embassy in Riyadh with drones, forcing the US to close embassies in Saudi Arabia and Kuwait. QatarEnergy halted ALL LNG production. The IDF "struck and dismantled" Iran's state broadcaster IRIB and bombed the Assembly of Experts in Qom — the body that appoints the next Supreme Leader. Iran's death toll stands at 787 across 131+ cities. Brent crude hit a 19-month high approaching $80/bbl. Trump laid out 4 objectives and estimated 4–5 weeks but said the US could go "far longer." Operations are ongoing on Day 4.`,
 
   keyFacts: [
     'Khamenei confirmed killed — IRNA state media confirmation 14:30 UTC Feb 28',
@@ -44,6 +44,20 @@ export const CONFLICT = {
     'Day 3: US/Israel strike PMF/Kataib Hezbollah base in Iraq — 2 killed, 5 wounded',
     'Day 3: IDF launches "broad wave" strikes on "heart of Tehran" + simultaneous Lebanon ops',
     'Day 3: IRGC claims 60 strategic targets, 500 facilities, 700+ drones in 2 days',
+    'Day 3: Trump White House address — 4 objectives: destroy missiles, annihilate navy, stop nukes, stop terror funding',
+    'Day 3: Trump estimates 4–5 weeks but "we have the capability to go far longer"',
+    'Day 3: IDF "struck and dismantled" IRIB state broadcaster HQ — 2 employees killed incl. IRINN editor-in-chief',
+    'Day 4: Iranian drones hit US Embassy in Riyadh — building empty, limited fire, no casualties',
+    'Day 4: US closes embassies in Saudi Arabia and Kuwait; nonessential evacuations ordered across region',
+    'Day 4: State Dept travel advisories for 16 Middle Eastern countries',
+    'Day 4: Israel ground incursion into southern Lebanon — Netanyahu/Katz approve buffer zone expansion',
+    'Day 4: Lebanon: 40 killed, 246 wounded, 30K+ displaced from Israeli operations',
+    'Day 4: Assembly of Experts offices bombed in Qom — succession mechanism under direct military pressure',
+    'Day 4: US death toll rises to 6 KIA (2 additional bodies recovered)',
+    'Day 4: Iran death toll rises to 787 (IRCS) across 131+ cities',
+    'Day 4: Brent crude 19-month high ~$80/bbl; Bernstein warns $120–$150 in extreme scenario',
+    'Day 4: UK considering HMS Duncan (Type 45) to Cyprus; Starmer says UK "not joining strikes"',
+    'Day 4: Trump: "Iranians want to talk, I said it\'s too late!"',
   ],
 
   objectives: {
@@ -58,19 +72,19 @@ export const CONFLICT = {
   },
 
   casualties: {
-    us:       { kia: 4,   wounded: 18,   civilians: 0 },  // Hegseth confirmed 4th KIA + 18 total wounded (Pentagon briefing Mar 2)
-    israel:   { kia: 0,   wounded: 0,    civilians: 10, injured: 40 },  // 9 in Beit Shemesh, 1 elsewhere; some sources say 12 killed, 11 missing
-    iran:     { killed: 555, injured: 747 },  // IRCS figures as of Day 3; ~180 students at Minab school; 131 cities affected; 100K rescuers on alert
-    lebanon:  { killed: 31, injured: 149 },  // IDF retaliatory strikes after Hezbollah entered war
+    us:       { kia: 6,   wounded: 18,   civilians: 0 },  // 6 KIA confirmed Mar 3 (2 additional bodies recovered from struck facility); 18 wounded
+    israel:   { kia: 0,   wounded: 0,    civilians: 11, injured: 300 },  // 9 Beit Shemesh + 1 Tel Aviv + 1 more; 12 wounded in Mar 3 central Israel missile; 40+ buildings damaged
+    iran:     { killed: 787, injured: 1200 },  // IRCS figures as of Mar 3; ~180 students at Minab school; 131+ cities affected; 100K rescuers on alert; "hundreds" per IRCS
+    lebanon:  { killed: 40, injured: 246 },  // IDF air + ground operations; 30K displaced; buffer zone expansion approved
     regional: {
-      uae:     { killed: 3, injured: 58 },      // Pakistani, Nepalese, Bangladeshi nationals; 165 missiles + 209 drones fired at UAE Day 1
-      kuwait:  { killed: 1, injured: 32 },       // 1 Kuwaiti civilian + 3 F-15s shot down (friendly fire, crew survived)
-      qatar:   { killed: 0, injured: 16 },       // Residential + energy infrastructure targeted
-      bahrain: { killed: 1, injured: 6 },        // Crowne Plaza + intercepted missile debris
-      oman:    { killed: 1, injured: 5 },        // Duqm port + tanker crew evacuated
-      iraq:    { killed: 2, injured: 5 },        // PMF/Kataib Hezbollah at Jurf al-Sakher
-      jordan:  { killed: 0, injured: 0 },        // 49 drones/missiles intercepted
-      saudi:   { killed: 0, injured: 0 },        // Ras Tanura shut, Prince Sultan AB intercepted
+      uae:     { killed: 3, injured: 68 },      // Pakistani, Nepalese, Asian nationals; Zayed Airport, Palm Jumeirah, Dubai Int'l
+      kuwait:  { killed: 3, injured: 35 },       // 1 civilian + 2 more from subsequent strikes; 3 F-15s shot down (friendly fire, crew survived)
+      qatar:   { killed: 0, injured: 16 },       // Residential + energy infrastructure; Ras Laffan + Mesaieed struck; LNG halted
+      bahrain: { killed: 1, injured: 4 },        // 5th Fleet HQ targeted; Crowne Plaza; intercepted missile debris killed Asian worker
+      oman:    { killed: 1, injured: 5 },        // Duqm port + Palau-flagged tanker off Musandam
+      iraq:    { killed: 2, injured: 5 },        // PMF/Kataib Hezbollah at Jurf al-Sakher; Erbil explosions
+      jordan:  { killed: 0, injured: 5 },        // 49 drones/missiles intercepted; property damage from fragments
+      saudi:   { killed: 0, injured: 0 },        // US Embassy hit by 2 drones (no casualties); Ras Tanura shut; 8 drones intercepted near Riyadh/Al-Kharj
     },
   },
 
@@ -245,6 +259,68 @@ export const CONFLICT = {
           body: 'Trump\'s \'4 weeks or less\' timeline plays out. US/Israel complete systematic destruction of nuclear, missile, naval, and command infrastructure. Hezbollah front remains at threshold level (rockets, not precision missiles). Hormuz closure persists 3–4 weeks. Oil stays elevated at $80–100/bbl. No ground invasion of Iran.' },
         { label: 'WORST CASE', subtitle: 'Full regional war — ground invasions, NATO drawn in', color: 'var(--danger)', prob: '40%',
           body: 'NOW PARTIALLY REALIZED: Hezbollah has opened a northern front. IDF chief says \'all options on the table\' including ground invasion of Lebanon. RAF Akrotiri struck — NATO territory under attack. If Hezbollah deploys its ~2,000 long-range precision missiles, Israeli air defenses would be overwhelmed. Ground incursion into Lebanon becomes necessary. Iran\'s 4M-volunteer mobilization suggests protracted resistance. Oil could spike above $120/bbl. Conflict extends months, not weeks.' },
+      ],
+    },
+
+    // ── DAY 4 — Mar 3, 2026 ───────────────────────────────────────────────
+    {
+      day: '2026-03-03',
+      dayLabel: 'DAY 4',
+      summary: 'Day 4 saw Iran strike the US Embassy in Riyadh with drones — the first attack on a US diplomatic compound since Benghazi (2012). The US closed embassies in Saudi Arabia and Kuwait and ordered regional evacuations across 16 countries. US death toll rose to 6 KIA after 2 additional bodies were recovered. The IDF struck and claimed to "dismantle" Iran\'s state broadcaster IRIB in Tehran, and bombed the Assembly of Experts office in Qom — the body that must appoint the next Supreme Leader. Israel launched a ground incursion into southern Lebanon, with Netanyahu and DefMin Katz approving buffer zone expansion. Lebanon casualties reached 40 killed, 246 wounded, 30K+ displaced. Iran\'s death toll rose to 787 across 131+ cities. Brent crude hit a 19-month high approaching $80/bbl. Trump rejected Iranian talks: "Iranians want to talk, I said it\'s too late!" UK considered sending HMS Duncan to defend Cyprus.',
+      keyFacts: [
+        'Iranian drones hit US Embassy in Riyadh — building empty, limited fire, no casualties',
+        'US closes embassies in Saudi Arabia and Kuwait; nonessential evacuations ordered across region',
+        'State Dept travel advisories for 16 Middle Eastern countries',
+        'US death toll rises to 6 KIA — 2 additional bodies recovered from struck facility',
+        'IDF "struck and dismantled" IRIB state broadcaster HQ in Tehran — 2 employees killed incl. IRINN editor-in-chief',
+        'Assembly of Experts offices bombed in Qom — succession mechanism under direct military pressure',
+        'Israel ground incursion into southern Lebanon — Netanyahu/Katz approve buffer zone expansion',
+        'Lebanon: 40 killed, 246 wounded, 30K+ displaced from Israeli operations',
+        'Iran death toll rises to 787 (IRCS) across 131+ cities',
+        'Brent crude 19-month high ~$80/bbl; Bernstein warns $120–$150 in extreme scenario',
+        'UK considering HMS Duncan (Type 45) to Cyprus; Starmer says UK "not joining strikes"',
+        'Cyprus blames UK "poor communication" for Akrotiri strike; 2 more drones intercepted',
+        'Trump: "Iranians want to talk, I said it\'s too late!"',
+        'US Embassy Kuwait separately "targeted" by Iran — Kuwait FM confirmed',
+        'Saudi intercepted 8 additional drones near Riyadh and Al-Kharj',
+        'Fresh missile strike on central Israel — 12 wounded (Magen David Adom)',
+        'Schumer: "President cannot send forces to fight a war without congressional approval"',
+        'Speaker Johnson expects War Powers votes to fail — calls operation "limited in scope"',
+      ],
+      escalation: 96,
+      casualties: {
+        us:       { kia: 6, wounded: 18, civilians: 0 },
+        israel:   { kia: 0, wounded: 0, civilians: 11, injured: 300 },
+        iran:     { killed: 787, injured: 1200 },
+        lebanon:  { killed: 40, injured: 246 },
+        regional: {
+          uae:     { killed: 3, injured: 68 },
+          kuwait:  { killed: 3, injured: 35 },
+          qatar:   { killed: 0, injured: 16 },
+          bahrain: { killed: 1, injured: 4 },
+          oman:    { killed: 1, injured: 5 },
+          iraq:    { killed: 2, injured: 5 },
+          jordan:  { killed: 0, injured: 5 },
+          saudi:   { killed: 0, injured: 0 },
+        },
+      },
+      economicImpact: {
+        chips: [
+          { label: 'Brent Crude', val: '~$80/bbl', sub: '19-mo high ↑', color: 'var(--danger)' },
+          { label: 'WTI', val: '~$73/bbl', sub: '+12% ↑', color: 'var(--danger)' },
+          { label: 'EU Gas TTF', val: '+18%', sub: 'QatarEnergy halt', color: 'var(--danger)' },
+          { label: 'Embassies', val: '2 CLOSED', sub: 'Saudi + Kuwait', color: 'var(--danger)' },
+          { label: 'Hormuz', val: 'CLOSED', sub: 'Day 4', color: 'var(--danger)' },
+        ],
+        narrative: 'The energy crisis deepened on Day 4. Brent crude hit a 19-month high approaching $80/bbl. Bernstein raised its 2026 Brent forecast to $80 (from $65) and warned of $120–$150 in a prolonged scenario. European gas surged 18% on QatarEnergy\'s LNG shutdown. The US Embassy closures in Saudi Arabia and Kuwait signal that Washington expects sustained Iranian retaliation against Gulf civilian and diplomatic targets. Global supply chain disruption is now the most severe since the 1973 oil crisis.',
+      },
+      scenarios: [
+        { label: 'BEST CASE', subtitle: 'Ceasefire within 2 weeks; Hezbollah stands down', color: 'var(--success)', prob: '8%',
+          body: 'Trump\'s rejection of Iranian talks ("too late") makes diplomatic offramp nearly impossible in the short term. However, if Iran\'s military capability degrades sufficiently, a de facto ceasefire could emerge through exhaustion. Hezbollah agrees to stand down after IDF buffer zone stabilizes. Hormuz reopens within 2 weeks. Oil retraces to ~$70–75/bbl. Extremely unlikely at this stage.' },
+        { label: 'BASE CASE', subtitle: '4-5 week air campaign; ground ops in Lebanon only', color: 'var(--warning)', prob: '50%',
+          body: 'Trump\'s stated "4–5 weeks" timeline plays out. US/Israel systematically degrade remaining Iranian military infrastructure while IDF conducts limited ground operations in southern Lebanon (buffer zone, not Beirut). Hezbollah\'s missile inventory is degraded through sustained air campaign. No ground invasion of Iran. Hormuz closure persists 4–5 weeks. Oil stays at $80–100/bbl. Embassy closures are temporary.' },
+        { label: 'WORST CASE', subtitle: 'Full regional war — ground invasion of Iran, NATO involvement', color: 'var(--danger)', prob: '42%',
+          body: 'ESCALATION ACCELERATING: Trump\'s "boots on the ground" language + "big wave hasn\'t happened yet" signal potential ground invasion. IDF already conducting ground ops in Lebanon. Embassy closures suggest Washington preparing for prolonged conflict. Assembly of Experts bombing prevents Iran from reconstituting leadership — regime collapse could trigger unpredictable militancy. Bernstein\'s $120–$150 oil scenario becomes reality. Iran deploys remaining asymmetric capabilities (sleeper cells, cyberattacks on Western infrastructure). Conflict extends months.' },
       ],
     },
   ] as ConflictDaySnapshot[],

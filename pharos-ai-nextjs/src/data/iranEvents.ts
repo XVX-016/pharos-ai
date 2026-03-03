@@ -1702,6 +1702,335 @@ Significance:
     actorResponses: [],
     tags: ['iraq', 'pmf', 'kataib-hezbollah', 'jurf-al-sakher', 'proxy', 'day-3'],
   },
+
+  // ── Day 3 Evening / Day 4 (March 2 PM – March 3) ───────────────────────────
+
+  {
+    id:        'evt-045',
+    timestamp: '2026-03-02T16:00:00Z',
+    severity:  'CRITICAL',
+    type:      'POLITICAL',
+    title:     'Trump White House address: 4 objectives laid out, war "4–5 weeks", could go "far longer"',
+    location:  'White House, Washington D.C.',
+    summary:   'President Trump gave his first in-person public address on the Iran operation at a Medal of Honor ceremony in the White House East Room. He laid out four objectives: (1) destroying Iran\'s conventional missile capabilities, (2) annihilating their navy, (3) ensuring Iran never obtains a nuclear weapon, (4) stopping the world\'s #1 sponsor of terror from funding groups. He said the war was this generation\'s "last best chance" to neutralize the Iranian threat. He estimated 4–5 weeks but said the US has "the capability to go far longer." He vowed to "avenge" the deaths of 6 US service members, and said more US troops were "likely" to die. He also confirmed the Khamenei kill, calling it "a very precise operation."',
+    fullContent: `Trump spoke at 11 AM ET (16:00 UTC) on March 2 from the White House, before awarding the Medal of Honor to three soldiers.
+
+Four stated objectives:
+1. Destroy Iran's conventional ballistic missile capabilities
+2. Annihilate their navy
+3. Ensure Iran never obtains a nuclear weapon
+4. Stop the world's #1 sponsor of terror from ever funding terrorist groups again
+
+Key quotes:
+• "This was our last best chance. Iran ignored every warning."
+• "Iran's rapidly growing conventional ballistic missile program posed an unacceptable threat."
+• "As one nation, we grieve for the true American patriots who have made the ultimate sacrifice."
+• "We have the capability to go far longer" than 4–5 weeks.
+• On boots on the ground: "I don't have the yips" — would not rule it out.
+
+CNN analysis: Trump's messaging marked by "exaggerated threats and shifting, contradictory goals." His pre-war justifications included claims at times "at odds with US intelligence."
+
+NPR: Hegseth's Pentagon briefing and Trump's White House address represented the administration's first coordinated public messaging — 57+ hours after the first strikes.
+
+Speaker Johnson said he expected War Powers votes later this week to fail, calling the operation "limited in scope, limited in its objective."`,
+    verified: true,
+    sources: [
+      { name: 'CBS News',     tier: 1, reliability: 95 },
+      { name: 'NPR',          tier: 1, reliability: 95 },
+      { name: 'Guardian',     tier: 1, reliability: 95 },
+      { name: 'CNN',          tier: 1, reliability: 95 },
+      { name: 'Al Jazeera',   tier: 1, reliability: 95 },
+    ],
+    actorResponses: [
+      { actorId: 'us', actorName: 'President Trump', stance: 'SUPPORTING', type: 'STATEMENT', statement: 'This was our last best chance. Iran ignored every warning. We have four objectives: destroy missiles, annihilate the navy, stop nukes, stop terror funding.' },
+    ],
+    tags: ['trump', 'white-house', 'objectives', '4-5-weeks', 'medal-of-honor', 'day-3'],
+  },
+
+  {
+    id:        'evt-046',
+    timestamp: '2026-03-02T23:00:00Z',
+    severity:  'HIGH',
+    type:      'MILITARY',
+    title:     'IDF strikes and claims to "dismantle" IRIB state broadcaster headquarters in Tehran',
+    location:  'Evin district, Tehran',
+    summary:   'The IDF announced it had "struck and dismantled" the headquarters of Iran\'s state radio and television broadcaster (IRIB) in the Evin district of northern Tehran. The IDF described it as a "communications centre of the Iranian terrorist regime" used by the IRGC. Iran confirmed parts of the facilities were struck — IRINN (the news channel) said its offices were hit by four bombs. Two IRIB employees were killed, including IRINN\'s editor-in-chief. Broadcasting was briefly interrupted but resumed. Iran denied the building was "destroyed." The strike is significant as a psychological/information warfare operation — targeting the regime\'s primary propaganda infrastructure.',
+    fullContent: `IDF statement: "The Israeli Air Force struck and dismantled the headquarters of the Islamic Republic of Iran Broadcasting (IRIB)."
+
+The IDF said: "The activities taking place at the center were carried out and directed by the Iranian Revolutionary Guards Corps" and that the broadcaster "called for the destruction of the state of Israel and for the use of nuclear weapons."
+
+Iran's response:
+• IRINN (news channel) said its offices were struck by four bombs.
+• Two employees killed, including IRINN's editor-in-chief.
+• IRIB head confirmed the strike but said broadcasting continued — only a brief interruption.
+• Iran denied the building was destroyed, saying only "parts of the facilities" were hit.
+
+Straits Times: The IDF claimed the strike was carried out in the "Evin district of northern Tehran."
+
+Deadline: Israel says IRIB has been "destroyed" but Iran pushed back.
+
+Analysis:
+• This is a classic information warfare/psychological operations strike — degrading the regime's ability to communicate with its own population.
+• IRIB is the sole legal broadcaster in Iran with ~30 TV channels, 30+ radio stations.
+• The strike also targeted the regime's narrative control during a leadership crisis (Khamenei dead, Assembly of Experts bombed).
+• However, Iran managed to resume broadcasting relatively quickly, suggesting redundant transmission infrastructure.`,
+    verified: true,
+    sources: [
+      { name: 'IDF Spokesperson',  tier: 1, reliability: 90 },
+      { name: 'Straits Times',     tier: 1, reliability: 90 },
+      { name: 'Deadline',          tier: 2, reliability: 85 },
+      { name: 'Guardian live blog', tier: 1, reliability: 95 },
+      { name: 'DW News',           tier: 1, reliability: 90 },
+    ],
+    actorResponses: [
+      { actorId: 'idf', actorName: 'IDF Spokesperson', stance: 'SUPPORTING', type: 'STATEMENT', statement: 'The Israeli Air Force struck and dismantled the headquarters of the IRIB — a communications centre of the Iranian terrorist regime directed by the IRGC.' },
+    ],
+    tags: ['irib', 'state-broadcaster', 'tehran', 'evin', 'psyops', 'information-warfare', 'day-3'],
+  },
+
+  {
+    id:        'evt-047',
+    timestamp: '2026-03-03T04:00:00Z',
+    severity:  'CRITICAL',
+    type:      'MILITARY',
+    title:     'Iranian drones hit US Embassy in Riyadh — US closes embassies in Saudi Arabia and Kuwait',
+    location:  'Riyadh, Saudi Arabia / Kuwait City',
+    summary:   'Two Iranian drones struck the US Embassy in Saudi Arabia\'s capital Riyadh early Tuesday, causing a limited fire and minor material damage. The building was empty — no casualties. The Saudi Defense Ministry confirmed and said it also intercepted 8 additional drones near Riyadh and Al-Kharj. Hours later, the US closed its embassies in both Saudi Arabia and Kuwait and ordered nonessential staff to evacuate across the region. The Kuwait Embassy was separately "targeted" by Iran per Kuwait\'s Foreign Ministry. State Department issued travel advisories for 16 Middle Eastern countries "due to serious safety risks." This is the first strike on a US diplomatic compound since the 2012 Benghazi attack.',
+    fullContent: `Saudi Defense Ministry (post on X): The US embassy in Riyadh was hit by two drones resulting in "a limited fire and some material damage" (initial assessment).
+
+Reuters confirmed: The embassy building was empty at the time. No casualties.
+
+NYT: "About two hours after announcing the drone attack, the Saudi defense ministry said it had intercepted and destroyed eight drones near the cities of Riyadh and Al-Kharj."
+
+Kuwait:
+• Kuwait's Foreign Ministry said the US Embassy in Kuwait City was "targeted" by Iran.
+• The US Embassy in Kuwait announced it was closing until further notice.
+
+State Department response:
+• US closed embassies in Saudi Arabia and Kuwait on Tuesday.
+• Ordered nonessential personnel to evacuate across the region.
+• Travel advisories issued for 16 countries: Bahrain, Egypt, Iran, Iraq, Israel, West Bank, Gaza, Jordan, Kuwait, Lebanon, Oman, Qatar, Saudi Arabia, Syria, UAE, Yemen.
+
+Analysis:
+• Striking the US Embassy is an extreme escalation — even by Iranian standards. While the building was empty, the symbolic significance is immense.
+• This is the first direct strike on a US diplomatic compound in the Middle East since Benghazi (2012).
+• Combined with the Riyadh drone strikes, this confirms Iran's ability to project force deep into Saudi territory despite Saudi air defenses.
+• The embassy closures represent a major diplomatic retreat — the US is effectively evacuating its civilian presence from the Gulf.`,
+    verified: true,
+    sources: [
+      { name: 'Reuters',            tier: 1, reliability: 99 },
+      { name: 'NYT',                tier: 1, reliability: 97 },
+      { name: 'Al Jazeera',         tier: 1, reliability: 95 },
+      { name: 'CNBC',               tier: 1, reliability: 95 },
+      { name: 'Axios',              tier: 1, reliability: 90 },
+      { name: 'Saudi Defense Min.', tier: 1, reliability: 90 },
+    ],
+    actorResponses: [
+      { actorId: 'saudi', actorName: 'Saudi Defense Ministry', stance: 'NEUTRAL', type: 'STATEMENT', statement: 'The US embassy in Riyadh was hit by two drones resulting in a limited fire and some material damage. Eight additional drones were intercepted near Riyadh and Al-Kharj.' },
+    ],
+    tags: ['us-embassy', 'riyadh', 'kuwait', 'drones', 'embassy-closed', 'benghazi', 'day-4'],
+  },
+
+  {
+    id:        'evt-048',
+    timestamp: '2026-03-03T08:00:00Z',
+    severity:  'CRITICAL',
+    type:      'MILITARY',
+    title:     'Israel launches ground incursion into southern Lebanon — Netanyahu and Katz approve buffer zone expansion',
+    location:  'Southern Lebanon',
+    summary:   'Israeli Prime Minister Netanyahu and Defense Minister Israel Katz approved a military ground incursion into southern Lebanon. Katz said the army had been instructed "to advance and seize additional controlling areas in Lebanon to prevent firing on Israeli border settlements." The IDF issued evacuation orders for dozens of Lebanese locations. This comes after 4 days of escalating Israeli air strikes that have killed 40 and wounded 246 in Lebanon. The IDF later described the new deployment as an "advanced military posture" while denying it constituted a "ground manoeuvre." 30,000+ Lebanese displaced.',
+    fullContent: `Al Jazeera: "Israel's Defense Minister Israel Katz said Israel's army had been instructed to advance and seize additional controlling areas in Lebanon to prevent firing on Israeli border settlements."
+
+NYT: "The Israeli military said its move to advance into southern Lebanon and seize areas of the country on Tuesday was intended to expand a military buffer zone between Lebanon and communities in northern Israel."
+
+Reuters: "Lebanon was pulled deeper into the war on Tuesday as Hezbollah launched missiles at Israel for a second consecutive day and Israel sent troops into the south and carried out waves of air strikes."
+
+Key details:
+• Netanyahu and Katz gave formal approval for the operation.
+• IDF issued new evacuation orders for dozens of southern Lebanon locations.
+• IDF spokesperson later denied the deployment was a "ground manoeuvre" — called it "advanced military posture."
+• Lebanese Health Ministry: 40 killed, 246 wounded total from Israeli strikes.
+• At least 30,000 displaced in Lebanon.
+• This expands an existing buffer zone from the 2024 ceasefire period.
+
+Context:
+• Hezbollah broke the November 2024 ceasefire on March 2 by firing rockets and drones at Haifa — first time since the agreement.
+• Hezbollah said its attack was a "defensive act" in response to the Khamenei assassination.
+• This is now effectively a three-front war for Israel: Iran (air campaign), Lebanon (air + ground), and defending the home front from IRGC missiles.`,
+    verified: true,
+    sources: [
+      { name: 'Al Jazeera',         tier: 1, reliability: 95 },
+      { name: 'NYT',                tier: 1, reliability: 97 },
+      { name: 'Reuters',            tier: 1, reliability: 99 },
+      { name: 'Guardian',           tier: 1, reliability: 95 },
+      { name: 'The National (UAE)', tier: 2, reliability: 88 },
+    ],
+    actorResponses: [
+      { actorId: 'idf', actorName: 'DefMin Israel Katz', stance: 'SUPPORTING', type: 'STATEMENT', statement: 'The army has been instructed to advance and seize additional controlling areas in Lebanon to prevent firing on Israeli border settlements.' },
+    ],
+    tags: ['lebanon', 'ground-incursion', 'buffer-zone', 'netanyahu', 'katz', 'hezbollah', 'day-4'],
+  },
+
+  {
+    id:        'evt-049',
+    timestamp: '2026-03-03T14:25:00Z',
+    severity:  'HIGH',
+    type:      'MILITARY',
+    title:     'Assembly of Experts offices bombed in Qom and Tehran — body responsible for choosing next Supreme Leader',
+    location:  'Qom / Tehran, Iran',
+    summary:   'Israeli-US strikes targeted the offices of the Assembly of Experts — the clerical body responsible for appointing Iran\'s next Supreme Leader — in both Qom and Tehran. The Qom strike was reported by Tasnim on March 3: "The American-Zionist criminals attacked the Assembly of Experts building in Qom." A separate strike hit the Assembly\'s Tehran compound on March 2. With Khamenei dead and the Assembly\'s physical infrastructure under attack, Iran\'s constitutional succession mechanism is now under direct military pressure. This is a deliberate strategy to prevent Iran from reconstituting its supreme leadership.',
+    fullContent: `NYT (March 3, 9:25 AM ET): "An office of the Assembly of Experts, a clerical body that is supposed to appoint Iran's next supreme leader, was bombed in the city of Qom."
+
+Tasnim news agency (semi-official Iranian): "The American-Zionist criminals attacked the Assembly of Experts building in Qom."
+
+Times of Israel: Confirmed Israeli and US strikes hit the Tehran building of the body "tasked with electing Iran's new supreme leader."
+
+The Hindu: Israeli and US strikes hit the building in Qom, with evacuation warnings issued.
+
+Context:
+• The Assembly of Experts is an 88-member body of senior clerics elected by the public.
+• Its primary constitutional role: appoint, supervise, and if necessary dismiss the Supreme Leader.
+• With Khamenei dead since Feb 28, the Assembly is the ONLY body that can constitutionally appoint a successor.
+• Striking both the Tehran and Qom offices — the two main locations — puts direct military pressure on the succession process.
+• Iran formed an interim leadership council (Pezeshkian, Mohseni-Ejei, Arafi) but a permanent Supreme Leader requires Assembly action.
+• This represents a deliberate "decapitation plus succession denial" strategy.`,
+    verified: true,
+    sources: [
+      { name: 'NYT',                    tier: 1, reliability: 97 },
+      { name: 'Tasnim (semi-official)',  tier: 2, reliability: 70 },
+      { name: 'Times of Israel',        tier: 2, reliability: 88 },
+      { name: 'The Hindu',              tier: 2, reliability: 85 },
+    ],
+    actorResponses: [],
+    tags: ['assembly-of-experts', 'qom', 'tehran', 'succession', 'supreme-leader', 'decapitation', 'day-4'],
+  },
+
+  {
+    id:        'evt-050',
+    timestamp: '2026-03-03T06:00:00Z',
+    severity:  'HIGH',
+    type:      'MILITARY',
+    title:     'US death toll rises to 6 — two additional bodies recovered from struck regional facility',
+    location:  'Middle East (multiple locations)',
+    summary:   'CENTCOM confirmed the US death toll has risen to 6 service members killed. The original 3 were killed at Ali Al Salem AB in Kuwait during Iran\'s initial retaliatory strikes. A 4th died of wounds on March 2. On March 3, CENTCOM announced 2 additional bodies were recovered from "a regional facility struck by Iran" — bringing the total to 6 KIA and 18 wounded. CBS/NPR confirmed. Trump vowed to "avenge" the deaths. Kuwait\'s Defense Ministry also confirmed 3 Kuwaiti deaths (1 civilian + 2 from the F-15 friendly fire incident aftermath) and 35 wounded total.',
+    fullContent: `CBS News: "U.S. death toll in Iran war rises to 6 as Trump says campaign could last 5 weeks."
+
+CENTCOM timeline:
+• March 1 (Sunday 9:30 AM ET): 3 US service members killed, 5 seriously injured — at Ali Al Salem AB, Kuwait.
+• March 2 (Monday): 4th service member died of injuries sustained in Iran's initial attacks.
+• March 3 (Tuesday): 2 additional bodies recovered from a regional facility struck by Iran — total now 6 KIA.
+• 18 total wounded (revised upward from 5 seriously wounded initially).
+
+NPR: "CENTCOM said Monday that six U.S. service members died during Iran's initial attacks."
+
+CBS: "The fourth service member, who was seriously wounded during Iran's initial attacks, eventually died."
+
+Kuwait casualties updated:
+• 3 killed total (up from 1): 1 civilian + impacts from subsequent strikes.
+• 35 wounded (up from 32).
+• 3 US F-15 fighters shot down by Kuwaiti air defenses (friendly fire) — all 6 crew ejected safely.
+  CENTCOM: "The U.S. Air Force fighter jets were mistakenly shot down by Kuwaiti air defenses. All six aircrew ejected safely, have been safely recovered, and are in stable condition."
+  Video showed a Kuwaiti man approaching a female US pilot: "You're fine? No problem, you're safe. Thank you for helping us."`,
+    verified: true,
+    sources: [
+      { name: 'CBS News',  tier: 1, reliability: 95 },
+      { name: 'NPR',       tier: 1, reliability: 95 },
+      { name: 'CENTCOM',   tier: 1, reliability: 99 },
+      { name: 'NYT',       tier: 1, reliability: 97 },
+    ],
+    actorResponses: [
+      { actorId: 'us', actorName: 'CENTCOM', stance: 'SUPPORTING', type: 'STATEMENT', statement: 'Six US service members have been killed during Iran\'s attacks. 18 total wounded. All F-15 crew from Kuwaiti friendly fire have been safely recovered.' },
+    ],
+    tags: ['us-kia-6', 'centcom', 'casualties', 'kuwait', 'friendly-fire', 'f-15', 'day-4'],
+  },
+
+  {
+    id:        'evt-051',
+    timestamp: '2026-03-03T10:00:00Z',
+    severity:  'HIGH',
+    type:      'DIPLOMATIC',
+    title:     'UK considers sending HMS Duncan to defend Cyprus — Starmer says UK "not joining strikes"',
+    location:  'London / Cyprus',
+    summary:   'Defence Secretary John Healey is considering sending Royal Navy Type 45 destroyer HMS Duncan to Cyprus to defend RAF Akrotiri from future drone attacks. PM Starmer stated the UK is "not joining strikes" on Iran but will continue defensive action. Meanwhile, Cyprus blamed Britain\'s "poor communication" for the initial drone strike on Akrotiri and opened the door to reviewing the UK\'s basing rights. Two additional drones heading toward Akrotiri were intercepted by Cypriot government forces. Home Secretary Yvette Cooper briefed MPs. This represents NATO\'s most significant defensive response to the Iran conflict so far.',
+    fullContent: `Guardian: "Defence Secretary John Healey is considering sending Royal Navy destroyer HMS Duncan to Cyprus to help defend the Akrotiri RAF airbase."
+
+Telegraph: "Starmer should have sent warship to Cyprus sooner." Critics called the delayed response "pathetic."
+
+Express: "Cyprus has blamed Britain's 'poor communication' for the drone strike on RAF Akrotiri and opened the door to reviewing the UK's sovereign base areas."
+
+Cypriot government: Two additional unmanned drones heading towards RAF Akrotiri were intercepted — "confronted in time."
+
+Starmer: UK is "not joining strikes" on Iran but will continue defensive action.
+
+Guardian also reported an explosion in Larnaca, Cyprus — separate from the Akrotiri strikes.
+
+Analysis:
+• HMS Duncan is a Type 45 Daring-class destroyer — one of the most advanced air defense ships in the world, designed specifically for the anti-air/anti-missile role.
+• Sending it to Cyprus would be the most significant NATO military deployment in response to the Iran conflict.
+• Cyprus's threat to review basing rights is significant — the UK has held sovereign base areas since 1960.
+• The UK is trying to walk a fine line: allowing US forces to use UK bases (contributing to strikes) while claiming not to be a combatant.`,
+    verified: true,
+    sources: [
+      { name: 'Guardian',   tier: 1, reliability: 95 },
+      { name: 'Telegraph',  tier: 2, reliability: 88 },
+      { name: 'Express',    tier: 2, reliability: 80 },
+      { name: 'Sky News',   tier: 2, reliability: 88 },
+    ],
+    actorResponses: [
+      { actorId: 'uk', actorName: 'PM Starmer', stance: 'NEUTRAL', type: 'STATEMENT', statement: 'The UK is not joining strikes on Iran but will continue defensive action to protect our sovereign bases and personnel.' },
+    ],
+    tags: ['uk', 'hms-duncan', 'cyprus', 'akrotiri', 'starmer', 'nato', 'type-45', 'day-4'],
+  },
+
+  {
+    id:        'evt-052',
+    timestamp: '2026-03-03T14:00:00Z',
+    severity:  'CRITICAL',
+    type:      'ECONOMIC',
+    title:     'Brent crude hits 19-month high; Bernstein warns prices could reach $120–$150 in prolonged conflict',
+    location:  'Global markets',
+    summary:   'Oil prices continued to climb on Day 4. Brent settled at $77.74 (+6.68%) on Monday and kept rising Tuesday, hitting a 19-month high approaching $80/bbl. WTI settled at $71.23 (+6.28%). Bernstein raised its 2026 Brent forecast to $80 (from $65) and warned prices could reach $120–$150 in an extreme prolonged scenario. European gas prices surged 18% after QatarEnergy\'s LNG shutdown. Stock markets fell across Europe (FTSE -1.2%). Gold firmed, USD strengthened. Airlines sank. The global energy supply chain is now facing the most severe disruption since the 1973 oil crisis — Hormuz closed, Ras Tanura shut, Qatar LNG halted, Israeli/Kurdish fields offline.',
+    fullContent: `Reuters (March 3): "Oil prices keep climbing amid Iran conflict, with Brent hitting 19-month high."
+
+Bernstein raised 2026 Brent oil price assumption to $80/bbl from $65, but said prices could reach $120-$150 in an extreme prolonged conflict.
+
+Monday close (March 2):
+• Brent: $77.74/bbl (+6.68%, +$4.87)
+• WTI: $71.23/bbl (+6.28%, +$4.21)
+• Both extended gains after-hours on Hormuz closure confirmation
+
+Tuesday (March 3):
+• Brent approaching $80, hitting 19-month high
+• US crude up further
+• European gas TTF benchmark surged 18% on QatarEnergy LNG shutdown
+• Gold firmed (safe haven)
+• USD strengthened
+• Airlines sank across the board
+
+CNBC: "Oil is spiking and stocks are slumming after the attacks on Iran."
+CNN: "US stocks erased earlier losses" — defense stocks surging while energy-dependent sectors cratered.
+
+Supply disruptions now active:
+1. Strait of Hormuz — closed by IRGC, 200+ vessels anchored
+2. Saudi Ras Tanura refinery — 550K bbl/day offline
+3. QatarEnergy — ALL LNG production halted (~77 MTPA, ~30% of global supply)
+4. Israeli oil/gas fields — offline
+5. Iraqi Kurdistan production — stopped
+6. UAE stock exchanges — closed
+7. Multiple airports — suspended (Dubai, Kuwait, Bahrain, Erbil, Qatar)
+
+NPR: "Oil prices surge, but no panic yet." Brent remained in $77-80 range rather than spiking to $100+ — suggesting markets believe the conflict will be relatively short.`,
+    verified: true,
+    sources: [
+      { name: 'Reuters',    tier: 1, reliability: 99 },
+      { name: 'CNBC',       tier: 1, reliability: 95 },
+      { name: 'CNN',        tier: 1, reliability: 95 },
+      { name: 'NPR',        tier: 1, reliability: 95 },
+      { name: 'Bernstein',  tier: 1, reliability: 90 },
+    ],
+    actorResponses: [],
+    tags: ['oil', 'brent', 'markets', 'energy', 'bernstein', '$80', 'hormuz', 'day-4'],
+  },
 ];
 
 export const SEV_STYLE: Record<Severity, { bg: string; color: string; dimBg: string }> = {
