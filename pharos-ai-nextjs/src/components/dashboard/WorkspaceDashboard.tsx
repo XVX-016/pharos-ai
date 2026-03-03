@@ -15,7 +15,6 @@ import XPostCard from '@/components/shared/XPostCard';
 import Flag from '@/components/shared/Flag';
 import { CasChip } from '@/app/dashboard/overview/CasChip';
 
-const IntelMap   = dynamic(() => import('@/components/map/IntelMap'),                                 { ssr: false });
 const FullMapPage = dynamic(() => import('@/components/map/MapPageContent'),                           { ssr: false });
 
 // ─── types ───────────────────────────────────────────────────────────────────
@@ -188,8 +187,8 @@ function SignalsWidget() {
 }
 
 function MapWidget({ full }: { full: boolean }) {
-  if (full) return <div className="h-full"><FullMapPage /></div>;
-  return <div className="h-full"><IntelMap /></div>;
+  if (full) return <div className="h-full w-full"><FullMapPage embedded /></div>;
+  return <div className="h-full w-full"><FullMapPage embedded /></div>;
 }
 
 // ── Key Facts ──
@@ -458,13 +457,13 @@ function BriefWidget() {
   );
 }
 
-function widgetComponents(mapFull: boolean): Record<WidgetKey, () => React.ReactNode> {
+function widgetComponents(): Record<WidgetKey, () => React.ReactNode> {
   return {
     situation:   () => <SituationWidget />,
     latest:      () => <LatestEventsWidget />,
     actors:      () => <ActorsWidget />,
     signals:     () => <SignalsWidget />,
-    map:         () => <MapWidget full={mapFull} />,
+    map:         () => <MapWidget full={false} />,
     keyfacts:    () => <KeyFactsWidget />,
     casualties:  () => <CasualtiesWidget />,
     commanders:  () => <CommandersWidget />,
@@ -501,7 +500,7 @@ export function WorkspaceDashboard() {
   const [editing, setEditing] = useState(false);
   const [state, setState] = useState<WorkspaceState>(DEFAULT_STATE);
   const [mounted, setMounted] = useState(false);
-  const [mapFull, setMapFull] = useState(false);
+
 
   useEffect(() => {
     setState(load());
@@ -732,19 +731,12 @@ export function WorkspaceDashboard() {
                               <ArrowRight size={10} strokeWidth={2} className="text-[var(--blue-l)]" />
                             </Link>
                           )}
-                          {/* map full toggle — always visible on map widget */}
-                          {widget === 'map' && (
-                            <button
-                              onClick={() => setMapFull(v => !v)}
-                              className={`ml-auto flex items-center gap-[5px] text-[9px] font-bold tracking-wide px-[8px] py-[3px] border transition-colors ${
-                                mapFull
-                                  ? 'border-[var(--blue)] bg-[var(--blue-dim)] text-[var(--blue-l)]'
-                                  : 'border-[var(--bd)] bg-[var(--bg-3)] text-[var(--t4)]'
-                              }`}
-                            >
-                              <span className={`w-[6px] h-[6px] rounded-full ${mapFull ? 'bg-[var(--blue-l)]' : 'bg-[var(--t4)]'}`} />
-                              FULL
-                            </button>
+                          {/* map widget — link to full map page */}
+                          {!editing && widget === 'map' && (
+                            <Link href="/dashboard/map" className="no-underline ml-auto flex items-center gap-1">
+                              <span className="text-[9px] text-[var(--blue-l)] font-semibold">Full Map</span>
+                              <ArrowRight size={10} strokeWidth={2} className="text-[var(--blue-l)]" />
+                            </Link>
                           )}
 
                           {!editing && widget === 'predictions' && (
@@ -763,7 +755,7 @@ export function WorkspaceDashboard() {
 
                         {/* content */}
                         <div className="flex-1 min-h-0 overflow-hidden">
-                          {widgetComponents(mapFull)[widget]()}
+                          {widgetComponents()[widget]()}
                         </div>
                       </div>
                     </ResizablePanel>

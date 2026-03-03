@@ -143,7 +143,7 @@ export function FocusedChart({ index, data: initialData, initialRangeKey = '5d',
       },
       handleScroll: true,
       handleScale: true,
-      attributionLogo: false,
+
     });
 
     const series = chart.addSeries(AreaSeries, {
@@ -202,6 +202,7 @@ export function FocusedChart({ index, data: initialData, initialRangeKey = '5d',
     // Expose anchorModeRef toggle
     (containerRef.current as any).__setAnchorMode = (v: boolean) => { anchorModeRef.current = v; };
 
+    (chart as any).applyOptions({ attributionLogo: false });
     chartRef.current = chart;
 
     const obs = new ResizeObserver(entries => {

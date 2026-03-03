@@ -27,7 +27,7 @@ export default function SignalsPage() {
 
   return (
     <ResizablePanelGroup orientation="horizontal" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged} className="flex-1 min-w-0">
-      <ResizablePanel id="filters" defaultSize={22} minSize={15} maxSize={35} className="flex flex-col overflow-hidden">
+      <ResizablePanel id="filters" defaultSize="22%" minSize="15%" maxSize="35%" className="flex flex-col overflow-hidden min-w-[180px]">
         <SignalFilterRail
         sigFilter={sigFilter}
         acctFilter={acctFilter}
@@ -40,7 +40,7 @@ export default function SignalsPage() {
       />
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel id="content" defaultSize={78} minSize={50} className="flex flex-col overflow-hidden">
+      <ResizablePanel id="content" defaultSize="78%" minSize="50%" className="flex flex-col overflow-hidden">
         <div className="panel-header">
           <span className="section-title">Field Signals — Operation Epic Fury</span>
           <span className="label ml-auto text-[var(--t4)]">PHAROS-CURATED</span>

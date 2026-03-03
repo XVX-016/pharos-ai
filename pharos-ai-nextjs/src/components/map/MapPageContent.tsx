@@ -46,7 +46,7 @@ const INITIAL_VIEW: MapViewState = { longitude: 51.0, latitude: 30.0, zoom: 4.5,
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function FullMapPage() {
+export default function FullMapPage({ embedded = false }: { embedded?: boolean }) {
   const [viewState,    setViewState]    = useState<MapViewState>(INITIAL_VIEW);
   const [activeStory,  setActiveStory]  = useState<MapStory | null>(null);
   const [selectedItem, setSelectedItem] = useState<SelectedItem | null>(null);
@@ -106,7 +106,7 @@ export default function FullMapPage() {
           <Map mapStyle={mapStyle === 'dark' ? MAP_STYLE_DARK : MAP_STYLE_SAT} />
         </DeckGL>
 
-        <MapOverlays activeStory={activeStory} onClearStory={() => setActiveStory(null)} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(o => !o)} />
+        <MapOverlays activeStory={activeStory} onClearStory={() => setActiveStory(null)} sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(o => !o)} embedded={embedded} />
         <MapLegend hasPanel={!!selectedItem} />
         <MapControls viewState={viewState} mapStyle={mapStyle} hasPanel={!!selectedItem} onStyleChange={setMapStyle} />
 

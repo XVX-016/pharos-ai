@@ -23,14 +23,14 @@ function ActorsInner() {
 
   return (
     <ResizablePanelGroup orientation="horizontal" defaultLayout={defaultLayout} onLayoutChanged={onLayoutChanged} className="flex-1 min-w-0">
-      <ResizablePanel id="list" defaultSize={25} minSize={15} maxSize={40} className="flex flex-col overflow-hidden">
+      <ResizablePanel id="list" defaultSize="22%" minSize="15%" maxSize="40%" className="flex flex-col overflow-hidden min-w-[180px]">
         <ActorList
           selectedId={selId}
           onSelect={id => { setSelId(id); if (id) setTab('intel'); }}
         />
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel id="dossier" defaultSize={75} minSize={40} className="flex flex-col overflow-hidden">
+      <ResizablePanel id="dossier" defaultSize="78%" minSize="40%" className="flex flex-col overflow-hidden">
         {selected
           ? <ActorDossier actor={selected} tab={tab} onTabChange={setTab} />
           : <EmptyState icon={Users} message="Select an actor" />

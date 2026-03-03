@@ -76,12 +76,13 @@ type Props = {
   onClearStory: () => void;
   sidebarOpen:  boolean;
   onToggleSidebar: () => void;
+  embedded?: boolean;
 };
 
-export default function MapOverlays({ activeStory, onClearStory }: Props) {
+export default function MapOverlays({ activeStory, onClearStory, embedded = false }: Props) {
   return (
     <>
-      <BackButton />
+      {!embedded && <BackButton />}
       {activeStory && <ActiveStoryPill story={activeStory} onClear={onClearStory} />}
     </>
   );
