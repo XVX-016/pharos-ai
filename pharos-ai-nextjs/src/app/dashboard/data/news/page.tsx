@@ -14,7 +14,7 @@ type ViewMode = 'conflict' | 'all';
 export default function NewsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('conflict');
   const [activeChannel, setActiveChannel] = useState(0);
-  const [showImages, setShowImages] = useState(false);
+  const [showImages, setShowImages] = useState(true);
   const [feedData, setFeedData] = useState<Map<string, FeedItem[]>>(new Map());
   const [lastRefresh, setLastRefresh] = useState<number>(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,13 +55,20 @@ export default function NewsPage() {
       });
       const data = await res.json();
 
-      // Update client cache
+      // Update client cache — always update if items present; for empty/error
+      // feeds, only update if we don't already have cached items (preserve stale data)
       const now = Date.now();
       for (const feed of data.feeds ?? []) {
         if (feed.items?.length > 0) {
           clientCache.set(feed.feedId, {
             feedId: feed.feedId,
             items: feed.items,
+            fetchedAt: now,
+          });
+        } else if (!clientCache.has(feed.feedId)) {
+          clientCache.set(feed.feedId, {
+            feedId: feed.feedId,
+            items: [],
             fetchedAt: now,
           });
         }

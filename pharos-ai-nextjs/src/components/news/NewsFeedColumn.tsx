@@ -12,7 +12,7 @@ interface NewsFeedColumnProps {
   preloaded?: FeedItem[];
 }
 
-export function NewsFeedColumn({ feed, color, showImages = false, preloaded }: NewsFeedColumnProps) {
+export function NewsFeedColumn({ feed, color, showImages = true, preloaded }: NewsFeedColumnProps) {
   const [items, setItems] = useState<FeedItem[]>(preloaded ?? []);
   const [loading, setLoading] = useState(!preloaded);
   const [error, setError] = useState<string | null>(null);

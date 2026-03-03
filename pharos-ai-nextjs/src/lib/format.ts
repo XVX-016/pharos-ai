@@ -3,19 +3,23 @@
  * CODEX §4.1: import from here, never redefine locally.
  */
 
-/** "2026-03-01" */
+/** "2026-03-01" — local date */
 export function fmtDate(ts: string): string {
-  return new Date(ts).toISOString().slice(0, 10);
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
-/** "14:32" — UTC time, no seconds */
+/** "14:32" — local time, no seconds */
 export function fmtTime(ts: string): string {
-  return new Date(ts).toISOString().slice(11, 16);
+  return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-/** "14:32Z" — UTC time with Z suffix */
+/** "14:32 UTC" — explicit UTC time */
 export function fmtTimeZ(ts: string): string {
-  return fmtTime(ts) + 'Z';
+  return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }) + ' UTC';
 }
 
 /** Relative time: "4m", "2h", "3d" */
