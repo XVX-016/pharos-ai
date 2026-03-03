@@ -3,6 +3,7 @@ import './globals.css';
 import { Header } from '@/components/layout/Header';
 import { Toaster } from '@/components/ui/sonner';
 import { ReduxProvider } from '@/store/ReduxProvider';
+import { QueryProvider } from '@/lib/QueryProvider';
 
 export const metadata: Metadata = {
   title: 'Pharos Intelligence',
@@ -14,13 +15,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <ReduxProvider>
-          <div className="flex flex-col h-screen overflow-hidden">
-            <Header />
-            <div className="flex flex-1 min-h-0 overflow-hidden">
-              {children}
+          <QueryProvider>
+            <div className="flex flex-col h-screen overflow-hidden">
+              <Header />
+              <div className="flex flex-1 min-h-0 overflow-hidden">
+                {children}
+              </div>
             </div>
-          </div>
-          <Toaster theme="dark" position="bottom-right" />
+            <Toaster theme="dark" position="bottom-right" />
+          </QueryProvider>
         </ReduxProvider>
       </body>
     </html>
