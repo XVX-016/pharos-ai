@@ -19,6 +19,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { usePanelLayout } from '@/hooks/use-panel-layout';
 
 import type { MapPageContext } from '@/components/map/use-map-page';
+import { FlyToInterpolator } from '@deck.gl/core';
 import type { MapViewState } from '@deck.gl/core';
 
 type Props = {
@@ -67,7 +68,10 @@ export default function DesktopMapLayout({ ctx, embedded = false }: Props) {
       <ResizablePanel id="canvas" defaultSize="75%" minSize="40%" className="relative overflow-hidden">
         <div className="relative overflow-hidden w-full h-full">
           <DeckGL
-            viewState={{ ...viewState }}
+            viewState={{
+              ...viewState,
+              ...(viewState.transitionDuration ? { transitionInterpolator: new FlyToInterpolator() } : {}),
+            }}
             onViewStateChange={({ viewState: vs }) => setViewState(vs as MapViewState)}
             controller layers={layers} getTooltip={tooltip} onClick={handleMapClick}
             style={{ width: '100%', height: '100%' }}

@@ -19,6 +19,7 @@ import MapVisibilityMenu from '@/components/map/MapVisibilityMenu';
 import { MobileDetailPanel } from '@/components/map/mobile/MapDetailPanel';
 
 import type { MapPageContext } from '@/components/map/use-map-page';
+import { FlyToInterpolator } from '@deck.gl/core';
 import type { MapViewState } from '@deck.gl/core';
 
 type Props = {
@@ -41,7 +42,10 @@ export default function MobileMapLayout({ ctx, embedded = false }: Props) {
       <div className="relative overflow-hidden w-full h-full">
         {/* Map canvas */}
         <DeckGL
-          viewState={{ ...viewState }}
+          viewState={{
+            ...viewState,
+            ...(viewState.transitionDuration ? { transitionInterpolator: new FlyToInterpolator() } : {}),
+          }}
           onViewStateChange={({ viewState: vs }) => setViewState(vs as MapViewState)}
           controller layers={layers} getTooltip={tooltip} onClick={handleMapClick}
           style={{ width: '100%', height: '100%' }}
