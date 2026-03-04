@@ -82,6 +82,7 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [selectedTiers, setSelectedTiers] = useState<Set<number>>(new Set([1, 2, 3, 4]));
+  const [viewportWidth, setViewportWidth] = useState(0);
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
@@ -189,6 +190,20 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
     return () => el.removeEventListener('wheel', onWheel);
   }, [commitTransform]); // commitTransform is stable
 
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+
+    setViewportWidth(vp.getBoundingClientRect().width);
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setViewportWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(vp);
+    return () => observer.disconnect();
+  }, []);
+
   // ─── Articles ───────────────────────────────────────────────
   const articles = useMemo(() => {
     const items: TimelineArticle[] = [];
@@ -213,7 +228,7 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
     });
     items.sort((a, b) => a.time.getTime() - b.time.getTime());
     return items;
-  }, [feedData]);
+  }, [feedData, allFeeds]);
 
   const filtered = useMemo(
     () => articles.filter(a => selectedTiers.has(a.feed.tier)),
@@ -350,16 +365,14 @@ export function NewsTimeline({ feedData }: NewsTimelineProps) {
 
   // ─── Viewport culling for performance ───────────────────────
   const visibleCards = useMemo(() => {
-    const vp = viewportRef.current;
-    if (!vp) return layout.positioned;
-    const rect = vp.getBoundingClientRect();
+    if (viewportWidth <= 0) return layout.positioned;
     // Calculate visible canvas region
     const viewLeft = -pan.x / zoom - 200;
-    const viewRight = (-pan.x + rect.width) / zoom + 200;
+    const viewRight = (-pan.x + viewportWidth) / zoom + 200;
     return layout.positioned.filter(({ x }) => {
       return x + CARD_W > viewLeft && x < viewRight;
     });
-  }, [layout.positioned, pan.x, zoom]);
+  }, [layout.positioned, pan.x, zoom, viewportWidth]);
 
   return (
     <div className="flex flex-col w-full h-full min-h-0">

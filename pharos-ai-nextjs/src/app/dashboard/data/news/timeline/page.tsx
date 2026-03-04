@@ -97,24 +97,25 @@ export default function TimelinePage() {
       onScroll={isLandscapePhone ? onLandscapeScroll : undefined}
     >
       {/* Top bar */}
-      <div className={`flex items-center justify-between py-2 border-b border-[var(--bd)] bg-[var(--bg-app)] shrink-0 ${isLandscapePhone ? 'safe-px' : 'px-5'}`}>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/dashboard/data/news"
-            className="mono text-[10px] text-[var(--t4)] hover:text-[var(--t2)] no-underline transition-colors"
-          >
-            ← FEEDS
-          </Link>
-          <div className="w-px h-4 bg-[var(--bd)]" />
+      <div className={`py-2 border-b border-[var(--bd)] bg-[var(--bg-app)] shrink-0 overflow-x-auto ${isLandscapePhone ? 'safe-px' : 'px-5'}`}>
+        <div className="flex items-center justify-between gap-6 min-w-max">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/data/news"
+              className="mono text-[10px] text-[var(--t4)] hover:text-[var(--t2)] no-underline transition-colors"
+            >
+              ← FEEDS
+            </Link>
+            <div className="w-px h-4 bg-[var(--bd)]" />
             <span className="mono text-[10px] font-bold text-[var(--t1)] tracking-wider">
               {isMobile || view === 'feed' ? 'ALL ARTICLES' : 'TIMELINE VIEW'}
             </span>
             {(isMobile || view === 'feed') && (
               <span className="mono text-[9px] text-[var(--t4)]">{totalArticles} articles</span>
             )}
-        </div>
+          </div>
 
-        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
           {/* View toggle */}
           <div className="flex border border-[var(--bd)] overflow-hidden">
             <button
@@ -157,6 +158,7 @@ export default function TimelinePage() {
             <span className="mono text-[9px] text-[var(--t4)]">
               {refreshing ? 'loading…' : lastRefresh ? `${Math.floor((Date.now() - lastRefresh) / 1000)}s ago` : '…'}
             </span>
+          </div>
           </div>
         </div>
       </div>

@@ -29,31 +29,6 @@ const DATA_SOURCES = [
     status: 'LIVE',
     color: '#f59e0b',
   },
-  // Future data sources
-  {
-    href: '#',
-    label: 'FLIGHT TRACKING',
-    description: 'Real-time aircraft tracking via ADS-B / OpenSky Network. Military and civilian traffic over conflict zones.',
-    count: '—',
-    status: 'PLANNED',
-    color: '#6b7280',
-  },
-  {
-    href: '#',
-    label: 'VESSEL TRACKING',
-    description: 'AIS maritime vessel positions. Naval deployments, tanker movements, Strait of Hormuz traffic.',
-    count: '—',
-    status: 'PLANNED',
-    color: '#6b7280',
-  },
-  {
-    href: '#',
-    label: 'SATELLITE IMAGERY',
-    description: 'Open-source satellite imagery analysis. BDA, infrastructure monitoring, troop movements.',
-    count: '—',
-    status: 'PLANNED',
-    color: '#6b7280',
-  },
 ];
 
 export default function DataIndexPage() {
@@ -77,7 +52,7 @@ export default function DataIndexPage() {
               key={source.label}
               href={source.href}
               className={`
-                no-underline block p-5 rounded-lg border transition-colors
+                no-underline block p-5 border transition-colors
                 ${source.status === 'LIVE'
                   ? 'bg-[var(--bg-1)] border-[var(--bd)] hover:bg-[var(--bg-2)] hover:border-white/20 cursor-pointer'
                   : 'bg-[var(--bg-1)] border-[var(--bd)] opacity-40 cursor-not-allowed pointer-events-none'
@@ -89,7 +64,7 @@ export default function DataIndexPage() {
                 <span className="mono text-[11px] font-bold text-[var(--t1)] tracking-wider">
                   {source.label}
                 </span>
-                <span className={`ml-auto px-1.5 py-0.5 rounded text-[7px] mono font-bold border ${
+                <span className={`ml-auto px-1.5 py-0.5 text-[7px] mono font-bold border ${
                   source.status === 'LIVE'
                     ? 'bg-[var(--danger-dim)] text-[var(--danger)] border-[var(--danger-bd)]'
                     : 'bg-white/5 text-[var(--t4)] border-white/10'

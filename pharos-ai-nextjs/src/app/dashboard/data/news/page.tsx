@@ -10,7 +10,6 @@ import { ChannelView } from '@/components/news/ChannelView';
 import { AllFeedsView } from '@/components/news/AllFeedsView';
 import { useIsLandscapePhone } from '@/hooks/use-is-landscape-phone';
 import { useLandscapeScrollEmitter } from '@/hooks/use-landscape-scroll-emitter';
-import { useIsMobile } from '@/hooks/use-is-mobile';
 
 type ViewMode = 'conflict' | 'all';
 
@@ -23,7 +22,6 @@ export default function NewsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isLandscapePhone = useIsLandscapePhone();
-  const isMobile = useIsMobile();
   const onLandscapeScroll = useLandscapeScrollEmitter(isLandscapePhone);
 
   const { data: feeds } = useRssFeeds();
@@ -122,45 +120,44 @@ export default function NewsPage() {
       onScroll={isLandscapePhone ? onLandscapeScroll : undefined}
     >
       {/* Top bar */}
-      <div className={`flex items-center justify-between py-2 border-b border-[var(--bd)] bg-[var(--bg-app)] shrink-0 ${isLandscapePhone ? 'safe-px' : 'px-5'}`}>
-        <div className="flex items-center gap-3">
-          <span className="mono text-[10px] font-bold text-[var(--t3)] tracking-wider">
-            RSS MONITOR
-          </span>
-          <div className="w-px h-4 bg-[var(--bd)]" />
-          <div className="flex gap-1">
-            <button
-              onClick={() => setViewMode('conflict')}
-              className={`px-3 py-1 rounded text-[9px] mono font-bold tracking-wider transition-colors ${
-                viewMode === 'conflict'
-                  ? 'bg-[var(--danger-dim)] text-[var(--danger)] border border-[var(--danger-bd)]'
-                  : 'text-[var(--t4)] hover:text-[var(--t2)]'
-              }`}
-            >
-              CONFLICTS
-            </button>
-            <button
-              onClick={() => setViewMode('all')}
-              className={`px-3 py-1 rounded text-[9px] mono font-bold tracking-wider transition-colors ${
-                viewMode === 'all'
-                  ? 'bg-white/10 text-white border border-white/20'
-                  : 'text-[var(--t4)] hover:text-[var(--t2)]'
-              }`}
-            >
-              ALL FEEDS
-            </button>
-            {!isMobile && (
+      <div className={`py-2 border-b border-[var(--bd)] bg-[var(--bg-app)] shrink-0 overflow-x-auto ${isLandscapePhone ? 'safe-px' : 'px-5'}`}>
+        <div className="flex items-center justify-between gap-6 min-w-max">
+          <div className="flex items-center gap-3">
+            <span className="mono text-[10px] font-bold text-[var(--t3)] tracking-wider">
+              RSS MONITOR
+            </span>
+            <div className="w-px h-4 bg-[var(--bd)]" />
+            <div className="flex gap-1">
+              <button
+                onClick={() => setViewMode('conflict')}
+                className={`px-3 py-1 rounded text-[9px] mono font-bold tracking-wider transition-colors ${
+                  viewMode === 'conflict'
+                    ? 'bg-[var(--danger-dim)] text-[var(--danger)] border border-[var(--danger-bd)]'
+                    : 'text-[var(--t4)] hover:text-[var(--t2)]'
+                }`}
+              >
+                CONFLICTS
+              </button>
+              <button
+                onClick={() => setViewMode('all')}
+                className={`px-3 py-1 rounded text-[9px] mono font-bold tracking-wider transition-colors ${
+                  viewMode === 'all'
+                    ? 'bg-white/10 text-white border border-white/20'
+                    : 'text-[var(--t4)] hover:text-[var(--t2)]'
+                }`}
+              >
+                ALL FEEDS
+              </button>
               <Link
                 href="/dashboard/data/news/timeline"
                 className="px-3 py-1 rounded text-[9px] mono font-bold tracking-wider text-[var(--t4)] hover:text-[var(--t2)] no-underline transition-colors"
               >
                 TIMELINE →
               </Link>
-            )}
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
           {/* Image toggle */}
           <button
             onClick={() => setShowImages(v => !v)}
@@ -199,6 +196,7 @@ export default function NewsPage() {
             <span className="mono text-[9px] text-[var(--t4)]">
               {refreshing ? 'refreshing...' : timeSinceRefresh}
             </span>
+          </div>
           </div>
         </div>
       </div>
