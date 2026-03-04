@@ -34,11 +34,11 @@ type ResearchTask = {
 
 // Daily content targets — add data continuously throughout the day
 const TARGETS = {
-  events: 50,
+  events: 20,
   xPosts: 100,
   mapFeatures: 40,
-  stories: 8,
-  actorActions: 40,   // 4+ per major actor
+  stories: 6,
+  actorActions: 40,
 };
 
 export async function GET(
