@@ -12,6 +12,17 @@ import type { ActorMeta } from '@/data/map-tokens';
 import type { PickingInfo } from '@deck.gl/core';
 import type { StrikeArc, MissileTrack, Target, Asset, ThreatZone } from '@/data/map-data';
 
+// ─── Inline timestamp formatter (no import to keep file pure .ts) ────────────
+
+function fmtTs(ts: string | undefined): string {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const month = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' }).toUpperCase();
+  const day   = String(d.getUTCDate()).padStart(2, '0');
+  const time  = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' });
+  return `${month} ${day} · ${time} UTC`;
+}
+
 const FALLBACK_META: ActorMeta = {
   label: '??', cssVar: 'var(--t3)', rgb: [143, 153, 168],
   affiliation: 'NEUTRAL', group: 'Unknown',
@@ -38,8 +49,10 @@ export function createBuildTooltip(am: Record<string, ActorMeta>) {
   function strikeTooltip(d: StrikeArc): string {
     const m = meta(d.actor);
     const sevColor = d.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)';
+    const ts = fmtTs(d.timestamp);
     return `
-      <div style="font-weight:700;font-size:11px;color:var(--t1);margin-bottom:6px">${d.label}</div>
+      <div style="font-weight:700;font-size:11px;color:var(--t1);margin-bottom:5px">${d.label}</div>
+      ${ts ? `<div style="font-size:9px;color:var(--blue-l);font-weight:700;margin-bottom:5px;letter-spacing:0.04em">⏱ ${ts}</div>` : ''}
       <div style="margin-bottom:4px">${pill(m.label, m.cssVar)}${pill(d.type.replace('_', ' '), m.cssVar)}${pill(d.severity, sevColor)}</div>
       <div style="font-size:10px;color:var(--t3)">STATUS: <span style="color:${STATUS_META[d.status].cssVar}">${STATUS_META[d.status].label}</span></div>
     `;
@@ -49,8 +62,10 @@ export function createBuildTooltip(am: Record<string, ActorMeta>) {
     const m = meta(d.actor);
     const statusColor = d.status === 'INTERCEPTED' ? 'var(--warning)' : 'var(--danger)';
     const sevColor = d.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)';
+    const ts = fmtTs(d.timestamp);
     return `
-      <div style="font-weight:700;font-size:11px;color:var(--danger);margin-bottom:6px">${d.label}</div>
+      <div style="font-weight:700;font-size:11px;color:var(--danger);margin-bottom:5px">${d.label}</div>
+      ${ts ? `<div style="font-size:9px;color:var(--blue-l);font-weight:700;margin-bottom:5px;letter-spacing:0.04em">⏱ ${ts}</div>` : ''}
       <div style="margin-bottom:4px">${pill(m.label, m.cssVar)}${pill(d.type, m.cssVar)}${pill(d.severity, sevColor)}</div>
       <div style="font-size:10px;color:${statusColor};font-weight:700">▶ ${d.status}</div>
     `;
@@ -59,8 +74,10 @@ export function createBuildTooltip(am: Record<string, ActorMeta>) {
   function targetTooltip(d: Target): string {
     const m = meta(d.actor);
     const statusMeta = STATUS_META[d.status];
+    const ts = fmtTs(d.timestamp);
     return `
-      <div style="font-weight:700;font-size:12px;color:var(--t1);margin-bottom:6px">${d.name}</div>
+      <div style="font-weight:700;font-size:12px;color:var(--t1);margin-bottom:5px">${d.name}</div>
+      ${ts ? `<div style="font-size:9px;color:var(--blue-l);font-weight:700;margin-bottom:5px;letter-spacing:0.04em">⏱ ${ts}</div>` : ''}
       <div style="margin-bottom:6px">${pill(m.label, m.cssVar)}${pill(d.type.replace('_', ' '), m.cssVar)}${pill(d.status, statusMeta.cssVar)}</div>
       <div style="color:var(--t2);font-size:10px;line-height:1.5">${d.description}</div>
     `;

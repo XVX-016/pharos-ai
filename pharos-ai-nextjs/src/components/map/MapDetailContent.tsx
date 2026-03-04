@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useMapData, useMapStories } from '@/api/map';
 
 import { CATEGORY_LABEL, STATUS_META } from '@/data/map-tokens';
+import { fmtDate, fmtTimeZ } from '@/lib/format';
 import type { ActorMeta } from '@/data/map-tokens';
 import StoryIcon from './StoryIcon';
 
@@ -144,6 +145,7 @@ export function StrikeContent({ d, onSelectItem, onActivateStory }: {
         <Badge label={d.severity}               color={d.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)'} />
         <Badge label={statusMeta.label}          color={statusMeta.cssVar} />
       </div>
+      {d.timestamp && <Row label="TIME" value={`${fmtDate(d.timestamp)} · ${fmtTimeZ(d.timestamp)}`} color="var(--blue-l)" />}
       <Row label="ORIGIN"        value={`[${d.from[1].toFixed(2)}°N, ${d.from[0].toFixed(2)}°E]`} />
       <Row label="TARGET COORDS" value={`[${d.to[1].toFixed(2)}°N, ${d.to[0].toFixed(2)}°E]`} />
       {relatedTarget && (
@@ -186,6 +188,7 @@ export function MissileContent({ d, onActivateStory }: {
         <Badge label={isIntercepted ? '✓ INTERCEPTED' : '⚠ IMPACT CONFIRMED'} color={statusColor} />
         <Badge label={d.severity} color={d.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)'} />
       </div>
+      {d.timestamp && <Row label="TIME" value={`${fmtDate(d.timestamp)} · ${fmtTimeZ(d.timestamp)}`} color="var(--blue-l)" />}
       <Row label="ACTOR"        value={m.label} color={m.cssVar} />
       <Row label="LAUNCH POINT" value={`[${d.from[1].toFixed(2)}°N, ${d.from[0].toFixed(2)}°E]`} />
       <Row label="IMPACT POINT" value={`[${d.to[1].toFixed(2)}°N, ${d.to[0].toFixed(2)}°E]`} />
@@ -222,6 +225,7 @@ export function TargetContent({ d, onSelectItem, onActivateStory }: {
         <Badge label={d.status}                 color={statusMeta.cssVar} />
       </div>
       <p style={{ fontSize: 12, color: 'var(--t2)', lineHeight: 1.6, marginBottom: 12 }}>{d.description}</p>
+      {d.timestamp && <Row label="TIME" value={`${fmtDate(d.timestamp)} · ${fmtTimeZ(d.timestamp)}`} color="var(--blue-l)" />}
       <Row label="ACTOR"       value={m.label} color={m.cssVar} />
       <Row label="COORDINATES" value={`${d.position[1].toFixed(4)}°N, ${d.position[0].toFixed(4)}°E`} />
       {incomingStrikes.length > 0 && (

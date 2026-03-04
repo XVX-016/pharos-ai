@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { fmtTimeZ } from '@/lib/format';
+import { fmtDate, fmtTimeZ } from '@/lib/format';
 import StoryIcon from './StoryIcon';
+import { useMapData } from '@/api/map';
 
+import type { StrikeArc, MissileTrack, Target, Asset } from '@/data/map-data';
 import type { MapStory, StoryEvent } from '@/types/domain';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -47,6 +49,81 @@ function EventLog({ events }: { events: StoryEvent[] }) {
                 {new Date(ev.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).toUpperCase()} · {fmtTimeZ(ev.time)}
               </p>
               <p style={{ fontSize: 11, color: 'var(--t3)', lineHeight: 1.4 }}>{ev.label}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Story map features ───────────────────────────────────────────────────────
+
+type FeatureItem =
+  | { kind: 'strike';  data: StrikeArc   }
+  | { kind: 'missile'; data: MissileTrack }
+  | { kind: 'target';  data: Target      }
+  | { kind: 'asset';   data: Asset       };
+
+const FEATURE_COLOR: Record<FeatureItem['kind'], string> = {
+  strike:  'var(--blue)',
+  missile: 'var(--danger)',
+  target:  'var(--warning)',
+  asset:   'var(--teal)',
+};
+const FEATURE_ICON: Record<FeatureItem['kind'], string> = {
+  strike:  '⟶',
+  missile: '⌖',
+  target:  '◎',
+  asset:   '▲',
+};
+
+function StoryFeatures({ story }: { story: MapStory }) {
+  const { data } = useMapData();
+
+  const features = useMemo((): FeatureItem[] => {
+    if (!data) return [];
+    const out: FeatureItem[] = [];
+    for (const id of story.highlightStrikeIds)  { const d = data.strikes.find(x => x.id === id);  if (d) out.push({ kind: 'strike',  data: d }); }
+    for (const id of story.highlightMissileIds) { const d = data.missiles.find(x => x.id === id); if (d) out.push({ kind: 'missile', data: d }); }
+    for (const id of story.highlightTargetIds)  { const d = data.targets.find(x => x.id === id);  if (d) out.push({ kind: 'target',  data: d }); }
+    for (const id of story.highlightAssetIds)   { const d = data.assets.find(x => x.id === id);   if (d) out.push({ kind: 'asset',   data: d }); }
+    // sort by timestamp if available
+    out.sort((a, b) => {
+      const ta = ('timestamp' in a.data ? a.data.timestamp : '') ?? '';
+      const tb = ('timestamp' in b.data ? b.data.timestamp : '') ?? '';
+      return ta < tb ? -1 : ta > tb ? 1 : 0;
+    });
+    return out;
+  }, [data, story]);
+
+  if (!features.length) return null;
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <p className="label" style={{ color: 'var(--t4)', marginBottom: 8 }}>MAP FEATURES ({features.length})</p>
+      <div className="flex flex-col gap-1">
+        {features.map((f, i) => {
+          const color = FEATURE_COLOR[f.kind];
+          const icon  = FEATURE_ICON[f.kind];
+          const name  = 'label' in f.data ? f.data.label : f.data.name;
+          const ts    = 'timestamp' in f.data ? f.data.timestamp : undefined;
+          return (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+              padding: '6px 8px',
+              background: `color-mix(in srgb, ${color} 7%, var(--bg-1))`,
+              border: `1px solid color-mix(in srgb, ${color} 25%, var(--bd-s))`,
+              borderRadius: 2,
+            }}>
+              <span style={{ color, fontSize: 10, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{icon}</span>
+              <div className="flex-1 min-w-0">
+                <p style={{ fontSize: 10, color: 'var(--t2)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="mono" style={{ fontSize: 8, color, fontWeight: 700 }}>{f.kind.toUpperCase()}</span>
+                  {ts && <span className="mono" style={{ fontSize: 8, color: 'var(--blue-l)' }}>{fmtDate(ts)} · {fmtTimeZ(ts)}</span>}
+                </div>
+              </div>
             </div>
           );
         })}
@@ -110,6 +187,9 @@ export default function StoryCard({ story, isOpen, onToggle, onFlyTo }: Props) {
           </p>
 
           {story.events.length > 0 && <EventLog events={story.events} />}
+
+          {/* Map features */}
+          <StoryFeatures story={story} />
 
           {/* Key facts */}
           <div style={{ marginBottom: 10 }}>
@@ -175,6 +255,11 @@ export default function StoryCard({ story, isOpen, onToggle, onFlyTo }: Props) {
               <EventLog events={story.events} />
             </div>
           )}
+
+          {/* Map features */}
+          <div style={{ borderTop: '1px solid var(--bd-s)', paddingTop: 16 }}>
+            <StoryFeatures story={story} />
+          </div>
 
           {/* Key facts */}
           <div style={{ borderTop: '1px solid var(--bd-s)', paddingTop: 16 }}>
