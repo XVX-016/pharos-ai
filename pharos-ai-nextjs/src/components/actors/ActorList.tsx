@@ -24,7 +24,7 @@ type Props = {
 };
 
 export function ActorList({ selectedId, onSelect, currentDay, onDayChange, compact = false, pageScroll = false }: Props) {
-  const { data: actors } = useActors();
+  const { data: actors } = useActors(undefined, currentDay || undefined);
   const { data: allPosts } = useXPosts();
 
   const actorPostCounts = useMemo(() => {

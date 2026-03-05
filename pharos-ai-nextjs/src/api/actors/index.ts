@@ -9,7 +9,7 @@ export function useActors(id: string = CONFLICT_ID, day?: string) {
   return useQuery({
     queryKey: queryKeys.actors.list(id, day),
     queryFn: () =>
-      api.get<Actor[]>(buildUrl(`/conflicts/${id}/actors`, { day })),
+      api.get<Actor[]>(buildUrl(`/conflicts/${id}/actors`, { day, lite: true })),
     staleTime: 60_000,
   });
 }

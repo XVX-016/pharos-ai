@@ -15,6 +15,7 @@ export function useEvents(id: string = CONFLICT_ID, filters?: EventFilters) {
           severity: filters?.severity,
           type: filters?.type,
           verified: filters?.verified,
+          lite: true,
         }),
       ),
     staleTime: 60_000,

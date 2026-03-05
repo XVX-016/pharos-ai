@@ -33,27 +33,32 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const snapshot = day ? daySnapshotsRecord[day] : null;
 
-  return ok({
-    id: actor.id,
-    name: actor.name,
-    fullName: actor.fullName,
-    countryCode: actor.countryCode,
-    type: mapActorTypeToApi(actor.type),
-    activityLevel: snapshot?.activityLevel ?? actor.activityLevel,
-    activityScore: snapshot?.activityScore ?? actor.activityScore,
-    stance: snapshot?.stance ?? actor.stance,
-    saying: snapshot?.saying ?? actor.saying,
-    doing: snapshot?.doing ?? actor.doing,
-    assessment: snapshot?.assessment ?? actor.assessment,
-    recentActions: actor.actions.map(act => ({
-      date: act.date,
-      type: act.type,
-      description: act.description,
-      verified: act.verified,
-      significance: act.significance,
-    })),
-    keyFigures: actor.keyFigures,
-    linkedEventIds: actor.linkedEventIds,
-    daySnapshots: daySnapshotsRecord,
-  });
+  return ok(
+    {
+      id: actor.id,
+      name: actor.name,
+      fullName: actor.fullName,
+      countryCode: actor.countryCode,
+      type: mapActorTypeToApi(actor.type),
+      activityLevel: snapshot?.activityLevel ?? actor.activityLevel,
+      activityScore: snapshot?.activityScore ?? actor.activityScore,
+      stance: snapshot?.stance ?? actor.stance,
+      saying: snapshot?.saying ?? actor.saying,
+      doing: snapshot?.doing ?? actor.doing,
+      assessment: snapshot?.assessment ?? actor.assessment,
+      recentActions: actor.actions.map(act => ({
+        date: act.date,
+        type: act.type,
+        description: act.description,
+        verified: act.verified,
+        significance: act.significance,
+      })),
+      keyFigures: actor.keyFigures,
+      linkedEventIds: actor.linkedEventIds,
+      daySnapshots: daySnapshotsRecord,
+    },
+    {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    },
+  );
 }

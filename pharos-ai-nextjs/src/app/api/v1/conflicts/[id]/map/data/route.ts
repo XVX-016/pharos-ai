@@ -13,6 +13,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         ...(datasets.length > 0 ? { featureType: { in: datasets as never[] } } : {}),
       },
       orderBy: { timestamp: 'asc' },
+      select: {
+        id: true,
+        featureType: true,
+        actor: true,
+        priority: true,
+        category: true,
+        type: true,
+        status: true,
+        timestamp: true,
+        geometry: true,
+        properties: true,
+      },
     }),
     prisma.actor.findMany({
       where: { conflictId: id, mapKey: { not: null } },
@@ -111,5 +123,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
   }
 
-  return ok({ strikes, missiles, targets, assets, threatZones, heatPoints, actorMeta });
+  return ok(
+    { strikes, missiles, targets, assets, threatZones, heatPoints, actorMeta },
+    {
+      headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+    },
+  );
 }

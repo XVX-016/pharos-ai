@@ -38,5 +38,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     })),
   }));
 
-  return ok(data);
+  return ok(data, {
+    headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
+  });
 }

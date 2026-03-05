@@ -6,7 +6,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { usePanelLayout } from '@/hooks/use-panel-layout';
 import { useConflictDay } from '@/hooks/use-conflict-day';
-import { useActors } from '@/api/actors';
+import { useActor, useActors } from '@/api/actors';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useIsLandscapePhone } from '@/hooks/use-is-landscape-phone';
 import { useLandscapeScrollEmitter } from '@/hooks/use-landscape-scroll-emitter';
@@ -31,8 +31,9 @@ export function ActorsContent() {
   const [tab,   setTab]   = useState<'intel' | 'signals' | 'military'>('intel');
   const { defaultLayout, onLayoutChanged } = usePanelLayout({ id: 'actors' });
 
-  const { data: actors, isLoading } = useActors();
-  const selected = actors?.find(a => a.id === selId) ?? null;
+  const { data: actors, isLoading } = useActors(undefined, currentDay || undefined);
+  const { data: actorDetail } = useActor(undefined, selId ?? undefined);
+  const selected = actorDetail ?? actors?.find(a => a.id === selId) ?? null;
 
   if (isLoading) return <ListDetailScreenSkeleton />;
 

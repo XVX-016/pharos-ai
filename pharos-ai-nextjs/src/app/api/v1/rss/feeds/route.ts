@@ -6,14 +6,19 @@ export async function GET() {
     orderBy: { tier: 'asc' },
   });
 
-  return ok(feeds.map(f => ({
-    id: f.id,
-    name: f.name,
-    url: f.url,
-    perspective: f.perspective,
-    country: f.country,
-    tags: f.tags,
-    stateFunded: f.stateFunded,
-    tier: f.tier,
-  })));
+  return ok(
+    feeds.map(f => ({
+      id: f.id,
+      name: f.name,
+      url: f.url,
+      perspective: f.perspective,
+      country: f.country,
+      tags: f.tags,
+      stateFunded: f.stateFunded,
+      tier: f.tier,
+    })),
+    {
+      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+    },
+  );
 }

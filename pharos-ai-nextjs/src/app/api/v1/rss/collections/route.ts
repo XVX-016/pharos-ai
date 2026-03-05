@@ -33,5 +33,7 @@ export async function GET(req: NextRequest) {
     })),
   }));
 
-  return ok(data);
+  return ok(data, {
+    headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+  });
 }

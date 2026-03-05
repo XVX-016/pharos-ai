@@ -15,17 +15,22 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   if (!snapshot) return err('NOT_FOUND', `No snapshot for ${day}`, 404);
 
-  return ok({
-    day: snapshot.day.toISOString().slice(0, 10),
-    dayLabel: snapshot.dayLabel,
-    summary: snapshot.summary,
-    keyFacts: snapshot.keyFacts,
-    escalation: snapshot.escalation,
-    casualties: reassembleCasualties(snapshot.casualties),
-    economicImpact: {
-      chips: snapshot.economicChips.map(c => ({ label: c.label, val: c.val, sub: c.sub, color: c.color })),
-      narrative: snapshot.economicNarrative,
+  return ok(
+    {
+      day: snapshot.day.toISOString().slice(0, 10),
+      dayLabel: snapshot.dayLabel,
+      summary: snapshot.summary,
+      keyFacts: snapshot.keyFacts,
+      escalation: snapshot.escalation,
+      casualties: reassembleCasualties(snapshot.casualties),
+      economicImpact: {
+        chips: snapshot.economicChips.map(c => ({ label: c.label, val: c.val, sub: c.sub, color: c.color })),
+        narrative: snapshot.economicNarrative,
+      },
+      scenarios: snapshot.scenarios.map(s => ({ label: s.label, subtitle: s.subtitle, color: s.color, prob: s.prob, body: s.body })),
     },
-    scenarios: snapshot.scenarios.map(s => ({ label: s.label, subtitle: s.subtitle, color: s.color, prob: s.prob, body: s.body })),
-  });
+    {
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    },
+  );
 }

@@ -10,12 +10,11 @@ import { useIsMobile } from '@/hooks/use-is-mobile';
 import { useIsLandscapePhone } from '@/hooks/use-is-landscape-phone';
 import { useLandscapeScrollEmitter } from '@/hooks/use-landscape-scroll-emitter';
 import type { Severity, EventType } from '@/types/domain';
-import { useEvents } from '@/api/events';
+import { useEvent, useEvents } from '@/api/events';
 import { FeedFilterRail, ALL_TYPES } from '@/components/feed/FeedFilterRail';
 import { EventLog } from '@/components/feed/EventLog';
 import { EventDetail } from '@/components/feed/EventDetail';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { getEventsForDay } from '@/lib/day-filter';
 import { ListDetailScreenSkeleton } from '@/components/loading/screen-skeletons';
 
 export function FeedContent() {
@@ -27,9 +26,9 @@ export function FeedContent() {
   const isLandscapePhone = useIsLandscapePhone();
   const usePageScroll = isMobile && isLandscapePhone;
   const onLandscapeScroll = useLandscapeScrollEmitter(usePageScroll);
-  const { currentDay, setDay, allDays } = useConflictDay();
-  const { data: allEvents, isLoading } = useEvents();
+  const { currentDay, setDay } = useConflictDay();
   const [showAllDays, setShowAllDays] = useState(true);
+  const { data: allEvents, isLoading } = useEvents(undefined, showAllDays ? undefined : { day: currentDay });
 
   const [sevFilter,  setSevFilter]  = useState<Record<Severity, boolean>>({ CRITICAL: true, HIGH: true, STANDARD: true });
   const [typeFilter, setTypeFilter] = useState<Record<EventType, boolean>>(
@@ -40,19 +39,19 @@ export function FeedContent() {
   const [tab,     setTab]     = useState<'report' | 'signals'>('report');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { defaultLayout, onLayoutChanged } = usePanelLayout({ id: 'feed', panelIds: ['filters', 'log', 'detail'] });
+  const { data: selectedEvent } = useEvent(undefined, selId ?? undefined);
 
   const filtered = useMemo(() => {
     const events = allEvents ?? [];
-    const base = showAllDays ? events : getEventsForDay(events, allDays, currentDay);
-    return base.filter(e => {
+    return events.filter(e => {
       if (!sevFilter[e.severity]) return false;
       if (!typeFilter[e.type])    return false;
       if (verOnly && !e.verified) return false;
       return true;
     }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }, [sevFilter, typeFilter, verOnly, currentDay, showAllDays, allEvents, allDays]);
+  }, [sevFilter, typeFilter, verOnly, allEvents]);
 
-  const selected = allEvents?.find(e => e.id === selId) ?? null;
+  const selected = selectedEvent ?? allEvents?.find(e => e.id === selId) ?? null;
 
   if (isLoading) return <ListDetailScreenSkeleton />;
 

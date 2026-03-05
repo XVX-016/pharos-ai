@@ -513,7 +513,7 @@ export function WorkspaceDashboard() {
   const { data: conflict, isLoading: conflictLoading } = useConflict();
   const { data: snapshots, isLoading: snapshotsLoading } = useConflictDays();
   const { data: events, isLoading: eventsLoading } = useEvents();
-  const { data: actors, isLoading: actorsLoading } = useActors();
+  const { data: actors, isLoading: actorsLoading } = useActors(undefined, effectiveDashDay || undefined);
   const { data: xPosts, isLoading: postsLoading } = useXPosts();
   const isDashboardLoading = bootstrapLoading || conflictLoading || snapshotsLoading || eventsLoading || actorsLoading || postsLoading;
 

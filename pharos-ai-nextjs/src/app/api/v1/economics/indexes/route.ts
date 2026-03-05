@@ -16,15 +16,20 @@ export async function GET(req: NextRequest) {
     orderBy: [{ tier: 'asc' }, { category: 'asc' }],
   });
 
-  return ok(indexes.map(idx => ({
-    id: idx.id,
-    ticker: idx.ticker,
-    name: idx.name,
-    shortName: idx.shortName,
-    category: idx.category,
-    tier: idx.tier,
-    unit: idx.unit,
-    description: idx.description,
-    color: idx.color,
-  })));
+  return ok(
+    indexes.map(idx => ({
+      id: idx.id,
+      ticker: idx.ticker,
+      name: idx.name,
+      shortName: idx.shortName,
+      category: idx.category,
+      tier: idx.tier,
+      unit: idx.unit,
+      description: idx.description,
+      color: idx.color,
+    })),
+    {
+      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+    },
+  );
 }

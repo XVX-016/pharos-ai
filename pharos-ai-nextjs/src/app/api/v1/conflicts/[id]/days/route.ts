@@ -2,8 +2,35 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { ok, err, reassembleCasualties } from '@/lib/api-utils';
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const lite = req.nextUrl.searchParams.get('lite') === 'true';
+  if (lite) {
+    const snapshots = await prisma.conflictDaySnapshot.findMany({
+      where: { conflictId: id },
+      orderBy: { day: 'asc' },
+      select: {
+        day: true,
+        dayLabel: true,
+        summary: true,
+        escalation: true,
+      },
+    });
+
+    if (snapshots.length === 0) return err('NOT_FOUND', `No day snapshots for conflict ${id}`, 404);
+
+    const data = snapshots.map(s => ({
+      day: s.day.toISOString().slice(0, 10),
+      dayLabel: s.dayLabel,
+      summary: s.summary,
+      escalation: s.escalation,
+    }));
+
+    return ok(data, {
+      headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' },
+    });
+  }
+
   const snapshots = await prisma.conflictDaySnapshot.findMany({
     where: { conflictId: id },
     orderBy: { day: 'asc' },
@@ -30,5 +57,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     scenarios: s.scenarios.map(sc => ({ label: sc.label, subtitle: sc.subtitle, color: sc.color, prob: sc.prob, body: sc.body })),
   }));
 
-  return ok(data);
+  return ok(data, {
+    headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=120' },
+  });
 }

@@ -342,6 +342,7 @@ model ActorAction {
   actor Actor @relation(fields: [actorId], references: [id], onDelete: Cascade)
 
   @@index([actorId])
+  @@index([actorId, date(sort: Desc)])
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -443,6 +444,8 @@ model XPost {
   @@index([accountType])
   @@index([eventId])
   @@index([actorId])
+  @@index([conflictId, accountType, timestamp(sort: Desc)])
+  @@index([conflictId, significance, timestamp(sort: Desc)])
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -470,6 +473,8 @@ model MapFeature {
   @@index([conflictId, featureType])
   @@index([actor])
   @@index([timestamp])
+  @@index([conflictId, timestamp])
+  @@index([conflictId, featureType, timestamp])
 }
 
 // ────────────────────────────────────────────────────────────────

@@ -6,13 +6,18 @@ export async function GET() {
     orderBy: { ord: 'asc' },
   });
 
-  return ok(groups.map(g => ({
-    id: g.id,
-    label: g.label,
-    description: g.description,
-    color: g.color,
-    bg: g.bg,
-    border: g.border,
-    titleMatches: g.titleMatches,
-  })));
+  return ok(
+    groups.map(g => ({
+      id: g.id,
+      label: g.label,
+      description: g.description,
+      color: g.color,
+      bg: g.bg,
+      border: g.border,
+      titleMatches: g.titleMatches,
+    })),
+    {
+      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+    },
+  );
 }

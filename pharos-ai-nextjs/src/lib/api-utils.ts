@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 
 // ─── Response envelope ───────────────────────────────────────────────────────
 
-export function ok<T>(data: T) {
-  return NextResponse.json({ ok: true, data });
+type JsonInit = Parameters<typeof NextResponse.json>[1];
+
+export function ok<T>(data: T, init?: JsonInit) {
+  return NextResponse.json({ ok: true, data }, init);
 }
 
-export function err(code: string, message: string, status = 400) {
-  return NextResponse.json({ ok: false, error: { code, message } }, { status });
+export function err(code: string, message: string, status = 400, init?: JsonInit) {
+  return NextResponse.json({ ok: false, error: { code, message } }, { ...(init ?? {}), status });
 }
 
 // ─── Query helpers ───────────────────────────────────────────────────────────
