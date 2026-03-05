@@ -7,22 +7,63 @@ export function getDayFromTimestamp(ts: string, allDays: string[]): string {
   return allDays[allDays.length - 1];
 }
 
-/** Filter events to a single conflict day. */
+/**
+ * Find the previous day in allDays. Returns undefined if already at the first day.
+ */
+function prevDay(day: string, allDays: string[]): string | undefined {
+  const idx = allDays.indexOf(day);
+  return idx > 0 ? allDays[idx - 1] : undefined;
+}
+
+/**
+ * Filter events to a conflict day.
+ * If the requested day has no events, rolls back through previous days
+ * until data is found (handles day rollover when new day has no data yet).
+ */
 export function getEventsForDay(events: IntelEvent[], allDays: string[], day: string): IntelEvent[] {
-  return events.filter(e => getDayFromTimestamp(e.timestamp, allDays) === day);
+  let d: string | undefined = day;
+  while (d) {
+    const result = events.filter(e => getDayFromTimestamp(e.timestamp, allDays) === d);
+    if (result.length > 0) return result;
+    d = prevDay(d, allDays);
+  }
+  return [];
 }
 
-/** Filter X posts to a single conflict day. */
+/**
+ * Filter X posts to a conflict day.
+ * Rolls back to previous day if current day has no posts.
+ */
 export function getPostsForDay(posts: XPost[], allDays: string[], day: string): XPost[] {
-  return posts.filter(p => getDayFromTimestamp(p.timestamp, allDays) === day);
+  let d: string | undefined = day;
+  while (d) {
+    const result = posts.filter(p => getDayFromTimestamp(p.timestamp, allDays) === d);
+    if (result.length > 0) return result;
+    d = prevDay(d, allDays);
+  }
+  return [];
 }
 
-/** Get an actor's snapshot for a given day. */
-export function getActorForDay(actor: Actor, day: string): ActorDaySnapshot {
-  return actor.daySnapshots[day];
+/**
+ * Get an actor's snapshot for a given day.
+ * Rolls back to previous day if current day has no snapshot.
+ */
+export function getActorForDay(actor: Actor, day: string, allDays?: string[]): ActorDaySnapshot {
+  if (actor.daySnapshots[day]) return actor.daySnapshots[day];
+  // Roll back through allDays if provided
+  if (allDays) {
+    let d = prevDay(day, allDays);
+    while (d) {
+      if (actor.daySnapshots[d]) return actor.daySnapshots[d];
+      d = prevDay(d, allDays);
+    }
+  }
+  // Ultimate fallback: return the latest available snapshot
+  const keys = Object.keys(actor.daySnapshots).sort();
+  return actor.daySnapshots[keys[keys.length - 1]];
 }
 
-/** Get the conflict-level snapshot for a given day. */
+/** Get the conflict-level snapshot for a given day. Falls back to latest. */
 export function getConflictForDay(snapshots: ConflictDaySnapshot[], day: string): ConflictDaySnapshot {
   return snapshots.find(s => s.day === day) ?? snapshots[snapshots.length - 1];
 }

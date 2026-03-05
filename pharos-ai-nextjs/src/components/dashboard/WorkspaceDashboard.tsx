@@ -140,11 +140,11 @@ function LatestEventsWidget() {
 }
 
 function ActorsWidget() {
-  const { day, actors } = useContext(DashCtx);
+  const { day, actors, allDays } = useContext(DashCtx);
   return (
     <div className="h-full overflow-y-auto">
       {actors.map((actor, i) => {
-        const snap = getActorForDay(actor, day);
+        const snap = getActorForDay(actor, day, allDays);
         if (!snap) return null;
         const actC = ACT_C[snap.activityLevel] ?? 'var(--t2)';
         const staC = STA_C[snap.stance] ?? 'var(--t2)';
