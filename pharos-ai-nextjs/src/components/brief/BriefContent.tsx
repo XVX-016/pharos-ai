@@ -107,7 +107,7 @@ export function BriefContent() {
           </div>
         </BriefSection>
 
-        <BriefSection number="5" title="OUTLOOK — THREE SCENARIOS">
+        <BriefSection number="5" title="OUTLOOK">
           <div className="flex flex-col gap-[10px]">
             {snapshot.scenarios.map((s, i) => (
               <ScenarioCard key={i} label={s.label} subtitle={s.subtitle} color={s.color} prob={s.prob} body={s.body} />
