@@ -4,8 +4,8 @@ import { Analytics } from '@vercel/analytics/next';
 import { Header } from '@/components/layout/Header';
 import { ViewportHeightSync } from '@/components/layout/ViewportHeightSync';
 import { Toaster } from '@/components/ui/sonner';
-import { ReduxProvider } from '@/store/ReduxProvider';
-import { QueryProvider } from '@/lib/QueryProvider';
+import { ReduxProvider } from '@/store/redux-provider';
+import { QueryProvider } from '@/lib/query-provider';
 
 import type { Metadata, Viewport } from 'next';
 
