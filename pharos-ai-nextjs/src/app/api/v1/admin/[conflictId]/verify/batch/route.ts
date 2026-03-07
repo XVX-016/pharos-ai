@@ -1,0 +1,131 @@
+/**
+ * POST /api/v1/admin/{conflictId}/verify/batch
+ *
+ * Verify multiple X posts in a single request.
+ * Supports either specific postIds or a filter to find unverified posts.
+ * Max 20 posts per batch for cost control.
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { ok, err } from '@/lib/api-utils';
+import { requireAdmin } from '@/lib/admin-auth';
+import { safeJson } from '@/lib/admin-validate';
+import { verifyXPost } from '@/lib/xai-verify';
+import { isXAIConfigured } from '@/lib/xai-client';
+import { VerificationStatus, PostType } from '@/generated/prisma/client';
+import type { Prisma } from '@/generated/prisma/client';
+
+const MAX_BATCH = 20;
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ conflictId: string }> },
+) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
+
+  const { conflictId } = await params;
+  const body = await safeJson(req);
+  if (body instanceof NextResponse) return body;
+
+  if (!isXAIConfigured()) {
+    return err('SERVER_ERROR', 'XAI_API_KEY is not configured. Cannot verify posts.', 503);
+  }
+
+  const conflict = await prisma.conflict.findUnique({ where: { id: conflictId } });
+  if (!conflict) return err('NOT_FOUND', `Conflict ${conflictId} not found`, 404);
+
+  // Determine which posts to verify
+  let posts;
+
+  if (body.postIds && Array.isArray(body.postIds)) {
+    // Specific post IDs
+    if (body.postIds.length > MAX_BATCH) {
+      return err('VALIDATION', `Maximum ${MAX_BATCH} posts per batch request`);
+    }
+    posts = await prisma.xPost.findMany({
+      where: { id: { in: body.postIds }, conflictId },
+    });
+  } else {
+    // Filter-based selection
+    const where: Prisma.XPostWhereInput = { conflictId };
+    const limit = Math.min(body.filter?.limit ?? MAX_BATCH, MAX_BATCH);
+
+    if (body.filter?.status) {
+      where.verificationStatus = body.filter.status as VerificationStatus;
+    } else {
+      where.verificationStatus = 'UNVERIFIED';
+    }
+
+    if (body.filter?.postType) {
+      where.postType = body.filter.postType as PostType;
+    }
+
+    posts = await prisma.xPost.findMany({
+      where,
+      orderBy: { timestamp: 'desc' },
+      take: limit,
+    });
+  }
+
+  if (posts.length === 0) {
+    return ok({
+      results: [],
+      summary: { verified: 0, failed: 0, partial: 0, skipped: 0, total: 0 },
+    });
+  }
+
+  // Verify each post (sequential to avoid rate limits)
+  const results: {
+    postId: string;
+    handle: string;
+    postType: string;
+    previousStatus: string;
+    newStatus: string;
+    result: Record<string, unknown>;
+    citations: string[];
+  }[] = [];
+
+  const summary = { verified: 0, failed: 0, partial: 0, skipped: 0, total: posts.length };
+
+  for (const post of posts) {
+    const outcome = await verifyXPost({
+      tweetId: post.tweetId,
+      postType: post.postType,
+      handle: post.handle,
+      content: post.content,
+    });
+
+    // Update DB
+    await prisma.xPost.update({
+      where: { id: post.id },
+      data: {
+        verificationStatus: outcome.status as VerificationStatus,
+        verificationResult: outcome.result as import('@/generated/prisma/client').Prisma.InputJsonValue,
+        verifiedAt: new Date(),
+        xaiCitations: outcome.citations,
+      },
+    });
+
+    results.push({
+      postId: post.id,
+      handle: post.handle,
+      postType: post.postType,
+      previousStatus: post.verificationStatus,
+      newStatus: outcome.status,
+      result: outcome.result,
+      citations: outcome.citations,
+    });
+
+    // Update summary counts
+    switch (outcome.status) {
+      case 'VERIFIED': summary.verified++; break;
+      case 'FAILED': summary.failed++; break;
+      case 'PARTIAL': summary.partial++; break;
+      case 'SKIPPED': summary.skipped++; break;
+    }
+  }
+
+  return ok({ results, summary });
+}

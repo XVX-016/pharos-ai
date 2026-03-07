@@ -38,5 +38,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     actorCssVar: p.actor?.cssVar ?? null,
     actorColorRgb: p.actor?.colorRgb ?? [],
     pharosNote: p.pharosNote,
+    verificationStatus: p.verificationStatus,
+    verifiedAt: p.verifiedAt?.toISOString() ?? null,
+    xaiCitations: p.xaiCitations,
   })));
 }

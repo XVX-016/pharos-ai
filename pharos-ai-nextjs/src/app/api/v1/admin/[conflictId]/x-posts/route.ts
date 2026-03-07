@@ -5,7 +5,9 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { assertRequired, assertEnum, parseISODate, safeJson } from '@/lib/admin-validate';
 import { checkXPostEnforcement } from '@/lib/enforcement';
 import { isEnforcementMode, enforcementResponse } from '@/lib/enforcement-utils';
-import { SignificanceLevel, AccountType, PostType } from '@/generated/prisma/client';
+import { verifyXPost, shouldSkipVerification } from '@/lib/xai-verify';
+import { isXAIConfigured } from '@/lib/xai-client';
+import { SignificanceLevel, AccountType, PostType, VerificationStatus } from '@/generated/prisma/client';
 
 const SIGNIFICANCE_LEVELS = Object.values(SignificanceLevel);
 const ACCOUNT_TYPES = Object.values(AccountType);
@@ -68,6 +70,38 @@ export async function POST(
     if (!actor) return err('VALIDATION', `Actor ${body.actorId} not found`);
   }
 
+  // ── Inline verification via X AI ────────────────────────────────────────
+  let verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED;
+  let verificationResult: Record<string, unknown> | null = null;
+  let verifiedAt: Date | null = null;
+  let xaiCitations: string[] = [];
+
+  const skipVerification = shouldSkipVerification(req.nextUrl.searchParams);
+
+  if (!skipVerification && isXAIConfigured()) {
+    const outcome = await verifyXPost({
+      tweetId: body.tweetId,
+      postType,
+      handle: body.handle,
+      content: body.content,
+    });
+
+    verificationStatus = outcome.status as VerificationStatus;
+    verificationResult = outcome.result;
+    verifiedAt = new Date();
+    xaiCitations = outcome.citations;
+
+    // Reject XPOST type with failed verification
+    if (postType === PostType.XPOST && outcome.status === 'FAILED') {
+      return err(
+        'VERIFICATION_FAILED',
+        `Tweet verification failed: ${outcome.result.discrepancies?.join('; ') ?? 'Tweet does not exist or content does not match'}. ` +
+        `Use POST /verify/search to find real tweets, or add ?skipVerification=true to bypass (not recommended).`,
+        422,
+      );
+    }
+  }
+
   const post = await prisma.xPost.create({
     data: {
       id: body.id,
@@ -92,8 +126,17 @@ export async function POST(
       pharosNote:  body.pharosNote ?? null,
       eventId:     body.eventId    ?? null,
       actorId:     body.actorId    ?? null,
+      verificationStatus,
+      verificationResult: (verificationResult ?? undefined) as import('@/generated/prisma/client').Prisma.InputJsonValue | undefined,
+      verifiedAt,
+      xaiCitations,
     },
   });
 
-  return ok({ id: post.id, created: true });
+  return ok({
+    id: post.id,
+    created: true,
+    verificationStatus,
+    verifiedAt: verifiedAt?.toISOString() ?? null,
+  });
 }

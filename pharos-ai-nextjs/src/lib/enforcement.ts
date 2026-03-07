@@ -317,6 +317,26 @@ export function checkXPostEnforcement(body: Record<string, unknown>): Enforcemen
     });
   }
 
+  // ── XPOST without tweetId (verification prerequisite) ───────────────────
+  if (body.postType === 'XPOST' && !body.tweetId) {
+    issues.push({
+      code: 'XPOST_MISSING_TWEET_ID',
+      field: 'tweetId',
+      severity: 'error',
+      message: 'postType is XPOST but no tweetId provided. tweetId is required for tweet verification via the X AI API. Provide the real tweet numeric ID.',
+    });
+  }
+
+  // ── Verification reminder ───────────────────────────────────────────────
+  if (body.postType === 'XPOST' && body.tweetId) {
+    issues.push({
+      code: 'XPOST_WILL_BE_VERIFIED',
+      field: 'tweetId',
+      severity: 'suggestion',
+      message: 'This XPOST will be automatically verified against the X AI API on creation. If the tweetId does not correspond to a real tweet, creation will be rejected with 422 VERIFICATION_FAILED. Use POST /verify/search to find real tweet IDs first.',
+    });
+  }
+
   return issues;
 }
 

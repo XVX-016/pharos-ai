@@ -21,6 +21,7 @@ export const INSTALLATION_STATUSES = ['ACTIVE', 'DEGRADED', 'STRUCK', 'DAMAGED',
 
 /** Valid iconName values — must exactly match StoryIcon.tsx ICON_MAP keys */
 export const POST_TYPES = ['XPOST', 'NEWS_ARTICLE', 'OFFICIAL_STATEMENT', 'PRESS_RELEASE', 'ANALYSIS'] as const;
+export const VERIFICATION_STATUSES = ['UNVERIFIED', 'VERIFIED', 'FAILED', 'PARTIAL', 'SKIPPED'] as const;
 
 export const STORY_ICON_NAMES = [
   'Plane', 'Radiation', 'Anchor', 'Crosshair', 'Ship', 'Skull',

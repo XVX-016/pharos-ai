@@ -25,6 +25,7 @@ export function SignalsContent() {
   const [sigFilter,  setSigFilter]  = useState<Record<Significance, boolean>>({ BREAKING: true, HIGH: true, STANDARD: true });
   const [acctFilter, setAcctFilter] = useState<Record<AccountType, boolean>>({ military: true, government: true, journalist: true, analyst: true, official: true });
   const [pharosOnly, setPharosOnly] = useState(false);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const { defaultLayout, onLayoutChanged } = usePanelLayout({ id: 'signals' });
   const { currentDay, setDay, allDays } = useConflictDay();
@@ -38,9 +39,10 @@ export function SignalsContent() {
       if (!sigFilter[p.significance as Significance])       return false;
       if (!acctFilter[p.accountType as AccountType])        return false;
       if (pharosOnly && !p.pharosNote)                      return false;
+      if (verifiedOnly && p.verificationStatus !== 'VERIFIED') return false;
       return true;
     });
-  }, [sigFilter, acctFilter, pharosOnly, currentDay, showAll, allPosts, allDays]);
+  }, [sigFilter, acctFilter, pharosOnly, verifiedOnly, currentDay, showAll, allPosts, allDays]);
 
   const breaking = filtered.filter(p => p.significance === 'BREAKING');
   const high     = filtered.filter(p => p.significance === 'HIGH');
@@ -91,12 +93,14 @@ export function SignalsContent() {
       sigFilter={sigFilter}
       acctFilter={acctFilter}
       pharosOnly={pharosOnly}
+      verifiedOnly={verifiedOnly}
       totalShown={filtered.length}
       totalAll={allPosts?.length ?? 0}
       lastUpdated={lastUpdated}
       onSigChange={(s, v) => setSigFilter(p => ({ ...p, [s]: v }))}
       onAcctChange={(a, v) => setAcctFilter(p => ({ ...p, [a]: v }))}
       onPharosOnly={setPharosOnly}
+      onVerifiedOnly={setVerifiedOnly}
       currentDay={currentDay}
       onDayChange={(day) => { setDay(day); setShowAll(false); }}
       showAll={showAll}

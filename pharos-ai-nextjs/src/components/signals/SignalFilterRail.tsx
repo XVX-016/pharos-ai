@@ -4,8 +4,8 @@ import { FilterBlock, CheckboxRow, ToggleRow } from '@/components/shared/FilterC
 import { DaySelector } from '@/components/shared/DaySelector';
 import { cn } from '@/lib/utils';
 
-import type { Significance, AccountType, ConflictDay } from '@/types/domain';
-export type { Significance, AccountType };
+import type { Significance, AccountType, ConflictDay, VerificationStatus } from '@/types/domain';
+export type { Significance, AccountType, VerificationStatus };
 
 const SIG_LABELS: Significance[] = ['BREAKING', 'HIGH', 'STANDARD'];
 const ACCT_LABELS: AccountType[] = ['military', 'government', 'journalist', 'analyst'];
@@ -13,16 +13,24 @@ const SIG_C: Record<Significance, string> = {
   BREAKING: 'var(--danger)', HIGH: 'var(--warning)', STANDARD: 'var(--info)',
 };
 
+const VERIFICATION_LABELS: { key: string; label: string; color: string }[] = [
+  { key: 'VERIFIED', label: 'VERIFIED', color: 'var(--success)' },
+  { key: 'PARTIAL',  label: 'PARTIAL',  color: 'var(--warning)' },
+  { key: 'UNVERIFIED', label: 'UNVERIFIED', color: 'var(--t4)' },
+];
+
 type Props = {
   sigFilter:    Record<Significance, boolean>;
   acctFilter:   Record<AccountType, boolean>;
   pharosOnly:   boolean;
+  verifiedOnly: boolean;
   totalShown:   number;
   totalAll:     number;
   lastUpdated?: string;
   onSigChange:  (s: Significance, v: boolean) => void;
   onAcctChange: (a: AccountType, v: boolean) => void;
   onPharosOnly: (v: boolean) => void;
+  onVerifiedOnly: (v: boolean) => void;
   currentDay:   ConflictDay;
   onDayChange:  (day: ConflictDay) => void;
   showAll:      boolean;
@@ -32,8 +40,8 @@ type Props = {
 };
 
 export function SignalFilterRail({
-  sigFilter, acctFilter, pharosOnly, totalShown, totalAll, lastUpdated,
-  onSigChange, onAcctChange, onPharosOnly,
+  sigFilter, acctFilter, pharosOnly, verifiedOnly, totalShown, totalAll, lastUpdated,
+  onSigChange, onAcctChange, onPharosOnly, onVerifiedOnly,
   currentDay, onDayChange, showAll, onAllClick,
   compact = false, pageScroll = false,
 }: Props) {
@@ -61,6 +69,9 @@ export function SignalFilterRail({
           <CheckboxRow key={a} label={a.toUpperCase()} color="var(--info)"
             checked={acctFilter[a]} onChange={v => onAcctChange(a, v)} />
         ))}
+      </FilterBlock>
+      <FilterBlock label="VERIFICATION">
+        <ToggleRow label="Verified only" checked={verifiedOnly} onChange={onVerifiedOnly} />
       </FilterBlock>
       <FilterBlock label="ANALYST NOTES">
         <ToggleRow label="Pharos notes only" checked={pharosOnly} onChange={onPharosOnly} />

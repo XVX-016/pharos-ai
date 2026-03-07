@@ -27,6 +27,8 @@ export async function GET(
     actorsWithoutSnapshot,
     todaySnapshot,
     orphanedXPosts,
+    verificationCoverage,
+    failedVerificationPosts,
     allMapFeatures,
     allMapStories,
   ] = await Promise.all([
@@ -73,6 +75,18 @@ export async function GET(
         AND xp."eventId" IS NOT NULL
         AND ie.id IS NULL
     `,
+    // Unverified X posts (verification coverage)
+    prisma.xPost.groupBy({
+      by: ['verificationStatus'],
+      where: { conflictId },
+      _count: true,
+    }),
+    // Failed verification posts
+    prisma.xPost.findMany({
+      where: { conflictId, verificationStatus: 'FAILED' },
+      select: { id: true, handle: true, tweetId: true, postType: true, timestamp: true },
+      orderBy: { timestamp: 'desc' },
+    }),
     // All map features — for actor/priority integrity check
     prisma.mapFeature.findMany({
       where: { conflictId },
@@ -162,6 +176,21 @@ export async function GET(
       brokenStoryHighlightRefs: {
         count: brokenStoryHighlights.length,
         items: brokenStoryHighlights,
+      },
+      verificationCoverage: {
+        breakdown: Object.fromEntries(
+          verificationCoverage.map(g => [g.verificationStatus, g._count]),
+        ),
+        failedPosts: {
+          count: failedVerificationPosts.length,
+          items: failedVerificationPosts.map(p => ({
+            id: p.id,
+            handle: p.handle,
+            tweetId: p.tweetId,
+            postType: p.postType,
+            timestamp: p.timestamp.toISOString(),
+          })),
+        },
       },
     },
   });

@@ -159,6 +159,14 @@ enum StoryEventType {
   POLITICAL
 }
 
+enum VerificationStatus {
+  UNVERIFIED      // Not yet checked against X AI
+  VERIFIED        // Confirmed real via X AI search
+  FAILED          // tweetId doesn't exist or content mismatch
+  PARTIAL         // Corroborating evidence found but no exact match (non-XPOST types)
+  SKIPPED         // Post type doesn't need verification (e.g. ANALYSIS)
+}
+
 // ────────────────────────────────────────────────────────────────
 // Conflict
 // ────────────────────────────────────────────────────────────────
@@ -432,6 +440,12 @@ model XPost {
   eventId      String?
   actorId      String?
 
+  // Verification fields — powered by X AI (Grok) API
+  verificationStatus  VerificationStatus @default(UNVERIFIED)
+  verificationResult  Json?              // { match, contentSimilarity, actualContent, discrepancies, grokResponse }
+  verifiedAt          DateTime?          // When verification was performed
+  xaiCitations        String[]           // URLs from Grok citations (e.g. x.com/handle/status/123)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -446,6 +460,7 @@ model XPost {
   @@index([actorId])
   @@index([conflictId, accountType, timestamp(sort: Desc)])
   @@index([conflictId, significance, timestamp(sort: Desc)])
+  @@index([verificationStatus])
 }
 
 // ────────────────────────────────────────────────────────────────

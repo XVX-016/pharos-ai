@@ -2,13 +2,44 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { ok, err } from '@/lib/api-utils';
 import { requireAdmin } from '@/lib/admin-auth';
-import { assertRequired, assertEnum, parseISODate , safeJson } from '@/lib/admin-validate';
-import { SignificanceLevel, AccountType } from '@/generated/prisma/client';
+import { assertRequired, assertEnum, parseISODate, safeJson } from '@/lib/admin-validate';
+import { verifyXPost, shouldSkipVerification } from '@/lib/xai-verify';
+import { isXAIConfigured } from '@/lib/xai-client';
+import { SignificanceLevel, AccountType, PostType, VerificationStatus } from '@/generated/prisma/client';
 
 const SIGNIFICANCE_LEVELS = Object.values(SignificanceLevel);
 const ACCOUNT_TYPES = Object.values(AccountType);
+const POST_TYPE_VALUES = Object.values(PostType);
 
 const MAX_BULK = 50;
+
+type ValidatedPost = {
+  id: string;
+  handle: string;
+  displayName: string;
+  content: string;
+  accountType: string;
+  significance: string;
+  timestamp: Date;
+  postType: string;
+  tweetId: string | null;
+  avatar: string;
+  avatarColor: string;
+  verified: boolean;
+  images: string[];
+  videoThumb: string | null;
+  likes: number;
+  retweets: number;
+  replies: number;
+  views: number;
+  pharosNote: string | null;
+  eventId: string | null;
+  actorId: string | null;
+  verificationStatus: VerificationStatus;
+  verificationResult: Record<string, unknown> | null;
+  verifiedAt: Date | null;
+  xaiCitations: string[];
+};
 
 export async function POST(
   req: NextRequest,
@@ -31,29 +62,12 @@ export async function POST(
   const conflict = await prisma.conflict.findUnique({ where: { id: conflictId } });
   if (!conflict) return err('NOT_FOUND', `Conflict ${conflictId} not found`, 404);
 
+  const skipVerification = shouldSkipVerification(req.nextUrl.searchParams);
+  const xaiConfigured = isXAIConfigured();
+
   // Pre-validate
   const errors: { index: number; error: string }[] = [];
-  const validated: {
-    id: string;
-    handle: string;
-    displayName: string;
-    content: string;
-    accountType: string;
-    significance: string;
-    timestamp: Date;
-    avatar: string;
-    avatarColor: string;
-    verified: boolean;
-    images: string[];
-    videoThumb: string | null;
-    likes: number;
-    retweets: number;
-    replies: number;
-    views: number;
-    pharosNote: string | null;
-    eventId: string | null;
-    actorId: string | null;
-  }[] = [];
+  const validated: ValidatedPost[] = [];
 
   for (let i = 0; i < body.posts.length; i++) {
     const item = body.posts[i];
@@ -69,8 +83,47 @@ export async function POST(
     const accErr = assertEnum(item.accountType, ACCOUNT_TYPES, 'accountType');
     if (accErr) { errors.push({ index: i, error: accErr }); continue; }
 
+    const postType = item.postType ?? 'XPOST';
+    const ptErr = assertEnum(postType, POST_TYPE_VALUES, 'postType');
+    if (ptErr) { errors.push({ index: i, error: ptErr }); continue; }
+
+    // tweetId required for XPOST
+    if (postType === 'XPOST' && !item.tweetId) {
+      errors.push({ index: i, error: 'tweetId is required when postType is XPOST' });
+      continue;
+    }
+
     const ts = parseISODate(item.timestamp, 'timestamp');
     if (typeof ts === 'string') { errors.push({ index: i, error: ts }); continue; }
+
+    // Run inline verification for XPOST types
+    let verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED;
+    let verificationResult: Record<string, unknown> | null = null;
+    let verifiedAt: Date | null = null;
+    let xaiCitations: string[] = [];
+
+    if (!skipVerification && xaiConfigured) {
+      const outcome = await verifyXPost({
+        tweetId: item.tweetId,
+        postType,
+        handle: item.handle,
+        content: item.content,
+      });
+
+      verificationStatus = outcome.status as VerificationStatus;
+      verificationResult = outcome.result;
+      verifiedAt = new Date();
+      xaiCitations = outcome.citations;
+
+      // Reject XPOST type with failed verification
+      if (postType === 'XPOST' && outcome.status === 'FAILED') {
+        errors.push({
+          index: i,
+          error: `Tweet verification failed for "${item.handle}": ${outcome.result.discrepancies?.join('; ') ?? 'Tweet does not exist or content does not match'}`,
+        });
+        continue;
+      }
+    }
 
     validated.push({
       id: item.id,
@@ -80,6 +133,8 @@ export async function POST(
       accountType: item.accountType,
       significance: item.significance,
       timestamp: ts,
+      postType,
+      tweetId: item.tweetId ?? null,
       avatar: item.avatar ?? '',
       avatarColor: item.avatarColor ?? '#6B7280',
       verified: item.verified ?? false,
@@ -92,11 +147,19 @@ export async function POST(
       pharosNote: item.pharosNote ?? null,
       eventId: item.eventId ?? null,
       actorId: item.actorId ?? null,
+      verificationStatus,
+      verificationResult,
+      verifiedAt,
+      xaiCitations,
     });
   }
 
   if (errors.length > 0) {
-    return err('VALIDATION', `${errors.length} items failed validation`, 400);
+    return err(
+      'VALIDATION',
+      `${errors.length} item(s) failed validation: ${errors.map(e => `[${e.index}] ${e.error}`).join('; ')}`,
+      400,
+    );
   }
 
   // Check for duplicates
@@ -118,6 +181,8 @@ export async function POST(
         data: {
           id: item.id,
           conflictId,
+          tweetId: item.tweetId,
+          postType: item.postType as PostType,
           handle: item.handle,
           displayName: item.displayName,
           content: item.content,
@@ -136,11 +201,15 @@ export async function POST(
           pharosNote: item.pharosNote,
           eventId: item.eventId,
           actorId: item.actorId,
+          verificationStatus: item.verificationStatus,
+          verificationResult: (item.verificationResult ?? undefined) as import('@/generated/prisma/client').Prisma.InputJsonValue | undefined,
+          verifiedAt: item.verifiedAt,
+          xaiCitations: item.xaiCitations,
         },
       });
       created.push(item.id);
     }
   });
 
-  return ok({ created, errors });
+  return ok({ created, errors: [] });
 }

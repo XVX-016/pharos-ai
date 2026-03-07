@@ -1,12 +1,12 @@
 'use client';
 import { Suspense } from 'react';
-import { AlertTriangle, CheckCircle, ExternalLink, Eye, Heart, Repeat2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle, ExternalLink, Eye, Heart, HelpCircle, Repeat2, ShieldCheck, ShieldAlert, ShieldQuestion } from 'lucide-react';
 import { Tweet } from 'react-tweet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ago } from '@/lib/format';
-import type { XPost } from '@/types/domain';
+import type { XPost, VerificationStatus } from '@/types/domain';
 import { fmt } from '@/lib/format';
 
 // ── Account type styles ───────────────────────────────────────────────────────
@@ -175,6 +175,7 @@ function PharosView({
             {post.verified && (
               <CheckCircle size={11} strokeWidth={2.5} className="text-[var(--blue-l)] shrink-0" />
             )}
+            <VerificationBadge status={post.verificationStatus} />
           </div>
           <span className="mono text-[var(--t4)]">{post.handle}</span>
         </div>
@@ -286,6 +287,42 @@ function EmbedSkeleton() {
     <div className="flex items-center justify-center py-8">
       <div className="mono text-[10px] text-[var(--t4)]">Loading embed…</div>
     </div>
+  );
+}
+
+function VerificationBadge({ status }: { status?: VerificationStatus }) {
+  if (!status || status === 'SKIPPED') return null;
+
+  const config: Record<string, { icon: React.ReactNode; color: string; title: string }> = {
+    VERIFIED: {
+      icon: <ShieldCheck size={11} strokeWidth={2} />,
+      color: 'var(--success)',
+      title: 'Verified — confirmed real via X AI',
+    },
+    PARTIAL: {
+      icon: <ShieldQuestion size={11} strokeWidth={2} />,
+      color: 'var(--warning)',
+      title: 'Partially corroborated',
+    },
+    FAILED: {
+      icon: <ShieldAlert size={11} strokeWidth={2} />,
+      color: 'var(--danger)',
+      title: 'Verification failed — tweet not found or content mismatch',
+    },
+    UNVERIFIED: {
+      icon: <HelpCircle size={10} strokeWidth={2} />,
+      color: 'var(--t4)',
+      title: 'Not yet verified',
+    },
+  };
+
+  const c = config[status];
+  if (!c) return null;
+
+  return (
+    <span className="shrink-0 flex items-center" style={{ color: c.color }} title={c.title}>
+      {c.icon}
+    </span>
   );
 }
 

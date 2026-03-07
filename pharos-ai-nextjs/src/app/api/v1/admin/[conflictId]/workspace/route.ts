@@ -72,6 +72,8 @@ export async function GET(
     allMapStories,
     storiesToday,
     actorActionsToday,
+    unverifiedPostCount,
+    failedVerificationCount,
   ] = await Promise.all([
     prisma.conflictDaySnapshot.findFirst({
       where: { conflictId, day: todayStart },
@@ -135,6 +137,13 @@ export async function GET(
     }),
     prisma.actorAction.count({
       where: { actorId: { in: actors.map(a => a.id) }, date: { startsWith: today } },
+    }),
+    // Verification coverage
+    prisma.xPost.count({
+      where: { conflictId, verificationStatus: 'UNVERIFIED', postType: { not: 'ANALYSIS' } },
+    }),
+    prisma.xPost.count({
+      where: { conflictId, verificationStatus: 'FAILED' },
     }),
   ]);
 
@@ -337,6 +346,30 @@ export async function GET(
       action: `PUT /api/v1/admin/${conflictId}/x-posts/{postId}`,
       count: breakingUnlinked.length,
       items: breakingUnlinked.map(p => ({ id: p.id, handle: p.handle })),
+    });
+  }
+
+  // ── Verification todos ──────────────────────────────────────────────────
+
+  if (failedVerificationCount > 0) {
+    todos.push({
+      priority: 'P1',
+      category: 'Verification',
+      title: `${failedVerificationCount} X post(s) failed verification — remove or replace`,
+      description: 'These posts were checked against the X AI API and the tweets were found to be non-existent or content mismatched. Delete them and use POST /verify/search to find real tweets to replace them with.',
+      action: `DELETE /api/v1/admin/${conflictId}/x-posts/{postId} → POST /api/v1/admin/${conflictId}/verify/search`,
+      count: failedVerificationCount,
+    });
+  }
+
+  if (unverifiedPostCount > 0) {
+    todos.push({
+      priority: 'P2',
+      category: 'Verification',
+      title: `Verify ${unverifiedPostCount} unverified X post(s)`,
+      description: 'These posts have not been checked against the X AI API. Run batch verification to confirm they are real. New posts with postType=XPOST are now auto-verified on creation.',
+      action: `POST /api/v1/admin/${conflictId}/verify/batch`,
+      count: unverifiedPostCount,
     });
   }
 

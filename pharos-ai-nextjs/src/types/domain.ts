@@ -130,6 +130,7 @@ export type Significance = 'BREAKING' | 'HIGH' | 'STANDARD';
 export type AccountType = 'military' | 'government' | 'journalist' | 'analyst' | 'official';
 
 export type PostType = 'XPOST' | 'NEWS_ARTICLE' | 'OFFICIAL_STATEMENT' | 'PRESS_RELEASE' | 'ANALYSIS';
+export type VerificationStatus = 'UNVERIFIED' | 'VERIFIED' | 'FAILED' | 'PARTIAL' | 'SKIPPED';
 
 export interface XPost {
   id: string;
@@ -155,6 +156,9 @@ export interface XPost {
   actorCssVar?: string | null;
   actorColorRgb?: number[];
   pharosNote?: string;
+  verificationStatus?: VerificationStatus;
+  verifiedAt?: string;
+  xaiCitations?: string[];
 }
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
@@ -182,6 +186,7 @@ export interface XPostFilters {
   significance?: string;
   accountType?: string;
   pharosOnly?: boolean;
+  verificationStatus?: VerificationStatus;
 }
 
 export interface EconFilters {

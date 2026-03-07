@@ -20,6 +20,7 @@ import {
   KINETIC_STATUSES,
   INSTALLATION_STATUSES,
   STORY_ICON_NAMES,
+  VERIFICATION_STATUSES,
 } from './admin-validate';
 
 export type ActorSummary = {
@@ -83,6 +84,7 @@ export function buildAgentManual(ctx: LiveContext): string {
    - [Search](#611-search)
    - [Validate](#612-validate)
    - [Bulk Operations](#613-bulk-operations)
+   - [Verification](#614-verification)
 7. [Enum Reference](#7-enum-reference)
 8. [Error Handling](#8-error-handling)
 9. [ID Generation](#9-id-generation)
@@ -253,11 +255,36 @@ POST ${scope}/bulk/events   (up to 50 at once)
 POST ${scope}/actors/{actorId}/responses
 \`\`\`
 
-### Step 6: Ingest X posts
+### Step 6: Ingest X posts (VERIFIED signals only)
+
+**CRITICAL: All X posts with postType=XPOST are now automatically verified against the X AI API on creation.** If the tweetId does not correspond to a real tweet, the request will be rejected with \`422 VERIFICATION_FAILED\`.
+
+**Recommended workflow for X posts:**
+
+1. **Search for real tweets first:**
+\`\`\`
+POST ${scope}/verify/search
+{ "query": "Iran IRGC Hormuz", "handles": ["@CENTCOM", "@IDF"], "fromDate": "2026-03-03" }
+\`\`\`
+This returns real, verified tweets with pre-formatted payloads ready to POST.
+
+2. **Create from search results** — use the \`suggestedPosts\` from the search response directly.
+
+3. **Or create with your own tweetId** — but it MUST be a real tweet:
 \`\`\`
 POST ${scope}/x-posts
 POST ${scope}/bulk/x-posts
 \`\`\`
+
+4. **Verify existing unverified posts:**
+\`\`\`
+POST ${scope}/verify/batch
+{ "filter": { "status": "UNVERIFIED", "limit": 20 } }
+\`\`\`
+
+5. **Bypass verification (emergencies only):** Add \`?skipVerification=true\` — NOT recommended.
+
+For non-XPOST types (NEWS_ARTICLE, OFFICIAL_STATEMENT, etc.), verification is corroboration-based and does not block creation.
 
 ### Step 7: Update actors
 \`\`\`
@@ -453,11 +480,16 @@ Cascades to sources and actor responses.
 **Optional:** \`verified\`, \`likes\`, \`retweets\`, \`replies\`, \`views\`, \`pharosNote\`, \`eventId\`, \`actorId\`
 
 **\`postType\` rules:**
-- \`XPOST\` — an actual tweet posted on X/Twitter. **\`tweetId\` is required** — provide a realistic 19-digit numeric string (e.g. \`"1894731234567890123"\`).
-- \`NEWS_ARTICLE\` — news wire/media headline (Reuters, AP, BBC, CNN, etc.)
-- \`OFFICIAL_STATEMENT\` — formal statement from a government, military, or official body
-- \`PRESS_RELEASE\` — formal press release
-- \`ANALYSIS\` — analyst commentary, thread, or assessment (@ISWResearch, @ArmsControlWonk, etc.)
+- \`XPOST\` — an actual tweet posted on X/Twitter. **\`tweetId\` is required** — must be a **real tweet ID** that exists on X. The system will verify the tweet via the X AI API on creation and **reject fake tweets with 422**.
+- \`NEWS_ARTICLE\` — news wire/media headline (Reuters, AP, BBC, CNN, etc.). Corroborated via web search.
+- \`OFFICIAL_STATEMENT\` — formal statement from a government, military, or official body. Corroborated via X + web search.
+- \`PRESS_RELEASE\` — formal press release. Corroborated via web search.
+- \`ANALYSIS\` — analyst commentary, thread, or assessment (@ISWResearch, @ArmsControlWonk, etc.). Verification skipped.
+
+**Verification on creation:**
+- \`XPOST\`: Auto-verified. **Rejected if fake.** Use \`POST /verify/search\` to find real tweet IDs first.
+- Other types: Corroborated but NOT rejected — marked as \`PARTIAL\` or \`VERIFIED\`.
+- Add \`?skipVerification=true\` to bypass (not recommended, use only during X AI API outages).
 
 ⚠️ \`accountType\` is **lowercase** — the only enum in the system that is. All others are UPPERCASE.
 
@@ -853,6 +885,86 @@ Max 50 items per request. All-or-nothing transaction.
 
 ---
 
+### 6.14 Verification
+
+**This is the most important section for X posts.** All XPOST-type signals are now verified against the X AI (Grok) API to prevent hallucinated/fake tweets from entering the dashboard.
+
+#### Verification statuses
+
+| Status | Meaning |
+|--------|---------|
+| \`UNVERIFIED\` | Not yet checked (legacy posts, or X AI API was unavailable) |
+| \`VERIFIED\` | Confirmed real via X AI — tweet exists and content matches |
+| \`FAILED\` | Tweet does not exist or content is a mismatch |
+| \`PARTIAL\` | Non-XPOST type — corroborating evidence found but no exact match |
+| \`SKIPPED\` | ANALYSIS posts — no verification needed |
+
+#### \`POST ${scope}/verify/search\` — Discover real tweets
+
+**Use this BEFORE creating X posts.** Searches X/Twitter via Grok for real posts about a topic.
+
+\`\`\`json
+{
+  "query": "Iran IRGC naval Hormuz deployment",
+  "handles": ["@CENTCOM", "@IDF", "@Reuters"],
+  "fromDate": "2026-03-03",
+  "toDate": "2026-03-04",
+  "maxResults": 10,
+  "eventId": "evt-2026-03-03-hormuz-naval-001"
+}
+\`\`\`
+
+**Response includes \`suggestedPosts\`** — pre-formatted payloads ready for \`POST /x-posts\`:
+\`\`\`json
+{
+  "discovered": [...],
+  "suggestedPosts": [
+    {
+      "id": "xp-@CENTCOM-2026-03-03-discovered-01",
+      "tweetId": "1894731200567890111",
+      "postType": "XPOST",
+      "handle": "@CENTCOM",
+      "displayName": "U.S. Central Command",
+      "content": "CENTCOM monitors increased IRGC activity...",
+      "verificationStatus": "VERIFIED",
+      "verified": true,
+      "eventId": "evt-2026-03-03-hormuz-naval-001"
+    }
+  ]
+}
+\`\`\`
+
+#### \`POST ${scope}/verify/post\` — Verify a single post
+
+\`\`\`json
+{ "postId": "xp-@PentagonPress-2026-03-03-02" }
+\`\`\`
+
+Returns the verification result and updates the post's \`verificationStatus\` in the DB.
+
+#### \`POST ${scope}/verify/batch\` — Verify multiple posts
+
+\`\`\`json
+{
+  "filter": {
+    "status": "UNVERIFIED",
+    "postType": "XPOST",
+    "limit": 20
+  }
+}
+\`\`\`
+
+Or by specific IDs:
+\`\`\`json
+{
+  "postIds": ["xp-@Reuters-2026-03-03-01", "xp-@CENTCOM-2026-03-03-02"]
+}
+\`\`\`
+
+Max 20 per batch. Returns summary: \`{ verified: N, failed: N, partial: N, skipped: N }\`
+
+---
+
 ## 7. Enum Reference
 
 > These values are pulled live from the API validation layer and are always correct.
@@ -877,7 +989,8 @@ Max 50 items per request. All-or-nothing transaction.
 | Severity (events) | \`CRITICAL\` \| \`HIGH\` \| \`STANDARD\` |
 | EventType | \`MILITARY\` \| \`DIPLOMATIC\` \| \`INTELLIGENCE\` \| \`ECONOMIC\` \| \`HUMANITARIAN\` \| \`POLITICAL\` |
 | SignificanceLevel (X posts) | \`BREAKING\` \| \`HIGH\` \| \`STANDARD\` |
-| **AccountType (X posts)** | **lowercase**: \`military\` \| \`government\` \| \`journalist\` \| \`analyst\` \| \`official\` |
+| **AccountType (X posts)** | **lowercase**: \`military\` \\| \`government\` \\| \`journalist\` \\| \`analyst\` \\| \`official\` |
+| VerificationStatus | ${VERIFICATION_STATUSES.join(' \\| ')} |
 | ActivityLevel | \`CRITICAL\` \| \`HIGH\` \| \`ELEVATED\` \| \`MODERATE\` |
 | Stance (actors) | \`AGGRESSOR\` \| \`DEFENDER\` \| \`RETALIATING\` \| \`PROXY\` \| \`NEUTRAL\` \| \`CONDEMNING\` |
 | ActorResponseStance | \`SUPPORTING\` \| \`OPPOSING\` \| \`NEUTRAL\` \| \`UNKNOWN\` |
@@ -948,7 +1061,11 @@ Max 50 items per request. All-or-nothing transaction.
 
 12. **Bulk is all-or-nothing.** Any validation error or duplicate ID in a bulk batch fails the entire batch.
 
-13. **Validation runs these checks now:** events without sources, events without responses, unlinked X posts, actors without today's snapshot, orphaned X post event refs, invalid actor on map features, invalid priority on map features, broken story highlight refs.
+13. **Validation runs these checks now:** events without sources, events without responses, unlinked X posts, actors without today's snapshot, orphaned X post event refs, invalid actor on map features, invalid priority on map features, broken story highlight refs, verification coverage.
+
+14. **NEVER fabricate tweets.** All XPOST-type posts are now verified against the X AI API. Fake tweetIds will be rejected with 422. Always use \`POST /verify/search\` to find real tweet IDs first.
+
+15. **Verification workflow:** Search first (\`/verify/search\`), create from results, then batch-verify any legacy unverified posts (\`/verify/batch\`). The workspace endpoint now tracks verification coverage as a P1/P2 todo.
 
 ---
 
