@@ -245,23 +245,28 @@ function PharosView({
         )}
       </div>
 
-      {/* ── FOOTER: engagement metrics ── */}
-      <Separator className="bg-[var(--bd-s)]" />
-      <div className="card-footer">
-        <EngStat icon={<Heart   size={10} strokeWidth={1.5} />} val={fmt(post.likes)}    />
-        <EngStat icon={<Repeat2 size={10} strokeWidth={1.5} />} val={fmt(post.retweets)} />
-        <EngStat icon={<Eye     size={10} strokeWidth={1.5} />} val={fmt(post.views)}    />
-        <span className="mono text-[8px] text-[var(--t4)] ml-1">(OLD STATS)</span>
-        <div className="ml-auto">
-          {postUrl ? (
-            <a href={postUrl} target="_blank" rel="noopener noreferrer" title="View on 𝕏">
-              <ExternalLink size={11} className="text-[var(--t4)] hover:text-[var(--blue-l)] transition-colors cursor-pointer" strokeWidth={1.5} />
-            </a>
-          ) : (
-            <ExternalLink size={11} className="text-[var(--t4)] opacity-30" strokeWidth={1.5} />
-          )}
-        </div>
-      </div>
+      {/* ── FOOTER: engagement metrics (hidden when all zeros) ── */}
+      {(post.likes > 0 || post.retweets > 0 || post.views > 0 || postUrl) && (
+        <>
+          <Separator className="bg-[var(--bd-s)]" />
+          <div className="card-footer">
+            {(post.likes > 0 || post.retweets > 0 || post.views > 0) && (
+              <>
+                <EngStat icon={<Heart   size={10} strokeWidth={1.5} />} val={fmt(post.likes)}    />
+                <EngStat icon={<Repeat2 size={10} strokeWidth={1.5} />} val={fmt(post.retweets)} />
+                <EngStat icon={<Eye     size={10} strokeWidth={1.5} />} val={fmt(post.views)}    />
+              </>
+            )}
+            {postUrl && (
+              <div className={post.likes > 0 || post.retweets > 0 || post.views > 0 ? 'ml-auto' : ''}>
+                <a href={postUrl} target="_blank" rel="noopener noreferrer" title="View on 𝕏">
+                  <ExternalLink size={11} className="text-[var(--t4)] hover:text-[var(--blue-l)] transition-colors cursor-pointer" strokeWidth={1.5} />
+                </a>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* ── PHAROS NOTE ── */}
       {!compact && post.pharosNote && (
