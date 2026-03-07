@@ -8,7 +8,7 @@ import {
   type CorroborationResult,
 } from './xai-client';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 export type VerificationOutcome = {
   status: 'VERIFIED' | 'FAILED' | 'PARTIAL' | 'SKIPPED' | 'UNVERIFIED';
@@ -24,7 +24,7 @@ export type VerificationOutcome = {
   citations: string[];
 };
 
-// ── Verification strategy router ─────────────────────────────────────────────
+// Verification strategy router
 
 /**
  * Verify a single X post based on its postType.

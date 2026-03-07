@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { err } from './api-utils';
 
-// ─── Map feature enums ────────────────────────────────────────────────────────
+// Map feature enums
 
 /** Valid actor values for map features — must match Actor.mapKey, always UPPERCASE */
 export const MAP_ACTOR_KEYS = [
@@ -17,7 +17,7 @@ export const ZONE_TYPES = ['CLOSURE', 'PATROL', 'NFZ', 'THREAT_CORRIDOR'] as con
 export const KINETIC_STATUSES = ['COMPLETE', 'INTERCEPTED', 'IMPACTED'] as const;
 export const INSTALLATION_STATUSES = ['ACTIVE', 'DEGRADED', 'STRUCK', 'DAMAGED', 'DESTROYED'] as const;
 
-// ─── Story enums ──────────────────────────────────────────────────────────────
+// Story enums
 
 /** Valid iconName values — must exactly match StoryIcon.tsx ICON_MAP keys */
 export const POST_TYPES = ['XPOST', 'NEWS_ARTICLE', 'OFFICIAL_STATEMENT', 'PRESS_RELEASE', 'ANALYSIS'] as const;

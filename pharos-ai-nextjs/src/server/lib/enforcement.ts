@@ -9,7 +9,7 @@ export type EnforcementIssue = {
   message: string;
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Helpers
 
 const VAGUE_LOCATIONS = new Set([
   'iran', 'israel', 'middle east', 'region', 'gulf', 'the region',
@@ -24,7 +24,7 @@ function spanDays(earliestIso: string, latestIso: string): number {
   return (new Date(latestIso).getTime() - new Date(earliestIso).getTime()) / (1000 * 60 * 60 * 24);
 }
 
-// ─── Map Stories ─────────────────────────────────────────────────────────────
+// Map Stories
 
 export type StoryEnforcementCtx = {
   /** Titles of existing stories (for duplicate detection) */
@@ -38,7 +38,7 @@ export function checkStoryEnforcement(
   const issues: EnforcementIssue[] = [];
   const events = Array.isArray(body.events) ? body.events as { time: string; label: string; type: string }[] : [];
 
-  // ── Duplicate title check ───────────────────────────────────────────────
+  // Duplicate title check
   if (typeof body.title === 'string' && Array.isArray(ctx.existingTitles)) {
     const title = body.title.trim().toLowerCase();
     const hasDuplicate = ctx.existingTitles.some(existing => existing.trim().toLowerCase() === title);
@@ -52,7 +52,7 @@ export function checkStoryEnforcement(
     }
   }
 
-  // ── Time span check ──────────────────────────────────────────────────────
+  // Time span check
   if (events.length >= 2) {
     const times = events.map(e => e.time).filter(Boolean).sort();
     const span = spanDays(times[0], times[times.length - 1]);
@@ -66,7 +66,7 @@ export function checkStoryEnforcement(
     }
   }
 
-  // ── Day in title ─────────────────────────────────────────────────────────
+  // Day in title
   if (typeof body.title === 'string' && dayPattern(body.title)) {
     issues.push({
       code: 'STORY_DAY_IN_TITLE',
@@ -76,7 +76,7 @@ export function checkStoryEnforcement(
     });
   }
 
-  // ── No map connections ───────────────────────────────────────────────────
+  // No map connections
   const strikeIds = (body.highlightStrikeIds as string[] | undefined) ?? [];
   const missileIds = (body.highlightMissileIds as string[] | undefined) ?? [];
   const targetIds = (body.highlightTargetIds as string[] | undefined) ?? [];
@@ -92,7 +92,7 @@ export function checkStoryEnforcement(
     });
   }
 
-  // ── Too few timeline events ──────────────────────────────────────────────
+  // Too few timeline events
   if (events.length < 2) {
     issues.push({
       code: 'STORY_TOO_FEW_EVENTS',
@@ -102,7 +102,7 @@ export function checkStoryEnforcement(
     });
   }
 
-  // ── Narrative too short ──────────────────────────────────────────────────
+  // Narrative too short
   const narrative = typeof body.narrative === 'string' ? body.narrative : '';
   if (narrative.length < 150) {
     issues.push({
@@ -113,7 +113,7 @@ export function checkStoryEnforcement(
     });
   }
 
-  // ── Too few key facts ────────────────────────────────────────────────────
+  // Too few key facts
   const keyFacts = Array.isArray(body.keyFacts) ? body.keyFacts : [];
   if (keyFacts.length < 3) {
     issues.push({
@@ -124,7 +124,7 @@ export function checkStoryEnforcement(
     });
   }
 
-  // ── Tagline duplicates title ─────────────────────────────────────────────
+  // Tagline duplicates title
   if (
     typeof body.title === 'string' &&
     typeof body.tagline === 'string' &&
@@ -138,7 +138,7 @@ export function checkStoryEnforcement(
     });
   }
 
-  // ── Timestamp day doesn't match event days ───────────────────────────────
+  // Timestamp day doesn't match event days
   if (typeof body.timestamp === 'string' && events.length > 0) {
     const storyDay = body.timestamp.slice(0, 10);
     const eventDays = new Set(events.map(e => (e.time ?? '').slice(0, 10)).filter(Boolean));
@@ -156,7 +156,7 @@ export function checkStoryEnforcement(
   return issues;
 }
 
-// ─── Events ──────────────────────────────────────────────────────────────────
+// Events
 
 export type EventEnforcementCtx = {
   /** Titles + timestamps of existing recent events (for duplicate detection) */
@@ -169,7 +169,7 @@ export function checkEventEnforcement(
 ): EnforcementIssue[] {
   const issues: EnforcementIssue[] = [];
 
-  // ── fullContent depth ────────────────────────────────────────────────────
+  // fullContent depth
   const fullContent = typeof body.fullContent === 'string' ? body.fullContent : '';
   if (fullContent.length < 200) {
     issues.push({
@@ -180,7 +180,7 @@ export function checkEventEnforcement(
     });
   }
 
-  // ── Summary depth ────────────────────────────────────────────────────────
+  // Summary depth
   const summary = typeof body.summary === 'string' ? body.summary : '';
   if (summary.length < 50) {
     issues.push({
@@ -191,7 +191,7 @@ export function checkEventEnforcement(
     });
   }
 
-  // ── Title length ─────────────────────────────────────────────────────────
+  // Title length
   const title = typeof body.title === 'string' ? body.title : '';
   if (title.length > 120) {
     issues.push({
@@ -202,7 +202,7 @@ export function checkEventEnforcement(
     });
   }
 
-  // ── Location too vague ───────────────────────────────────────────────────
+  // Location too vague
   const location = typeof body.location === 'string' ? body.location.trim().toLowerCase() : '';
   if (VAGUE_LOCATIONS.has(location)) {
     issues.push({
@@ -213,7 +213,7 @@ export function checkEventEnforcement(
     });
   }
 
-  // ── No sources ───────────────────────────────────────────────────────────
+  // No sources
   const sources = Array.isArray(body.sources) ? body.sources : [];
   if (sources.length === 0) {
     issues.push({
@@ -224,7 +224,7 @@ export function checkEventEnforcement(
     });
   }
 
-  // ── Possible duplicate ───────────────────────────────────────────────────
+  // Possible duplicate
   if (ctx.recentEvents && title) {
     const titleLower = title.toLowerCase();
     const similar = ctx.recentEvents.find(e => {
@@ -246,7 +246,7 @@ export function checkEventEnforcement(
     }
   }
 
-  // ── Severity vs type mismatch ────────────────────────────────────────────
+  // Severity vs type mismatch
   if (
     body.severity === 'CRITICAL' &&
     (body.type === 'HUMANITARIAN' || body.type === 'ECONOMIC')
@@ -262,12 +262,12 @@ export function checkEventEnforcement(
   return issues;
 }
 
-// ─── X Posts ─────────────────────────────────────────────────────────────────
+// X Posts
 
 export function checkXPostEnforcement(body: Record<string, unknown>): EnforcementIssue[] {
   const issues: EnforcementIssue[] = [];
 
-  // ── Content too short ────────────────────────────────────────────────────
+  // Content too short
   const content = typeof body.content === 'string' ? body.content : '';
   if (content.length < 20) {
     issues.push({
@@ -278,7 +278,7 @@ export function checkXPostEnforcement(body: Record<string, unknown>): Enforcemen
     });
   }
 
-  // ── BREAKING without eventId ─────────────────────────────────────────────
+  // BREAKING without eventId
   if (body.significance === 'BREAKING' && !body.eventId) {
     issues.push({
       code: 'XPOST_BREAKING_UNLINKED',
@@ -288,7 +288,7 @@ export function checkXPostEnforcement(body: Record<string, unknown>): Enforcemen
     });
   }
 
-  // ── BREAKING without pharosNote ──────────────────────────────────────────
+  // BREAKING without pharosNote
   if (body.significance === 'BREAKING' && !body.pharosNote) {
     issues.push({
       code: 'XPOST_BREAKING_NO_NOTE',
@@ -298,7 +298,7 @@ export function checkXPostEnforcement(body: Record<string, unknown>): Enforcemen
     });
   }
 
-  // ── Account type mismatch ────────────────────────────────────────────────
+  // Account type mismatch
   const handle = (typeof body.handle === 'string' ? body.handle : '').toLowerCase();
   const MILITARY_HANDLES = ['centcom', 'pentagon', 'idf', 'modmilrus', 'irgc', 'navcent', 'afcent'];
   const isMilitaryHandle = MILITARY_HANDLES.some(h => handle.includes(h));
@@ -311,7 +311,7 @@ export function checkXPostEnforcement(body: Record<string, unknown>): Enforcemen
     });
   }
 
-  // ── XPOST without tweetId (verification prerequisite) ───────────────────
+  // XPOST without tweetId (verification prerequisite)
   if (body.postType === 'XPOST' && !body.tweetId) {
     issues.push({
       code: 'XPOST_MISSING_TWEET_ID',
@@ -321,7 +321,7 @@ export function checkXPostEnforcement(body: Record<string, unknown>): Enforcemen
     });
   }
 
-  // ── Verification reminder ───────────────────────────────────────────────
+  // Verification reminder
   if (body.postType === 'XPOST' && body.tweetId) {
     issues.push({
       code: 'XPOST_WILL_BE_VERIFIED',
@@ -334,12 +334,12 @@ export function checkXPostEnforcement(body: Record<string, unknown>): Enforcemen
   return issues;
 }
 
-// ─── Day Snapshots ────────────────────────────────────────────────────────────
+// Day Snapshots
 
 export function checkDaySnapshotEnforcement(body: Record<string, unknown>): EnforcementIssue[] {
   const issues: EnforcementIssue[] = [];
 
-  // ── Summary too short ────────────────────────────────────────────────────
+  // Summary too short
   const summary = typeof body.summary === 'string' ? body.summary : '';
   if (summary.length < 200) {
     issues.push({
@@ -350,7 +350,7 @@ export function checkDaySnapshotEnforcement(body: Record<string, unknown>): Enfo
     });
   }
 
-  // ── No scenarios ─────────────────────────────────────────────────────────
+  // No scenarios
   const scenarios = Array.isArray(body.scenarios) ? body.scenarios : [];
   if (scenarios.length === 0) {
     issues.push({
@@ -361,7 +361,7 @@ export function checkDaySnapshotEnforcement(body: Record<string, unknown>): Enfo
     });
   }
 
-  // ── Too few key facts ────────────────────────────────────────────────────
+  // Too few key facts
   const keyFacts = Array.isArray(body.keyFacts) ? body.keyFacts : [];
   if (keyFacts.length < 3) {
     issues.push({
@@ -372,7 +372,7 @@ export function checkDaySnapshotEnforcement(body: Record<string, unknown>): Enfo
     });
   }
 
-  // ── No casualties ────────────────────────────────────────────────────────
+  // No casualties
   const casualties = Array.isArray(body.casualties) ? body.casualties : [];
   if (casualties.length === 0) {
     issues.push({
@@ -383,7 +383,7 @@ export function checkDaySnapshotEnforcement(body: Record<string, unknown>): Enfo
     });
   }
 
-  // ── High escalation with no key facts ───────────────────────────────────
+  // High escalation with no key facts
   if (typeof body.escalation === 'number' && body.escalation > 80 && keyFacts.length === 0) {
     issues.push({
       code: 'DAY_HIGH_ESCALATION_NO_FACTS',
@@ -396,7 +396,7 @@ export function checkDaySnapshotEnforcement(body: Record<string, unknown>): Enfo
   return issues;
 }
 
-// ─── Map Features (strike arcs, missile tracks, targets, assets) ──────────────
+// Map Features (strike arcs, missile tracks, targets, assets)
 
 export function checkMapFeatureEnforcement(
   body: Record<string, unknown>,
@@ -407,7 +407,7 @@ export function checkMapFeatureEnforcement(
   const isKinetic = featureType === 'STRIKE_ARC' || featureType === 'MISSILE_TRACK';
   const isInstallation = featureType === 'TARGET' || featureType === 'ASSET';
 
-  // ── No timestamp ─────────────────────────────────────────────────────────
+  // No timestamp
   if (!body.timestamp) {
     issues.push({
       code: 'FEATURE_NO_TIMESTAMP',
@@ -417,7 +417,7 @@ export function checkMapFeatureEnforcement(
     });
   }
 
-  // ── Kinetic: missing label ───────────────────────────────────────────────
+  // Kinetic: missing label
   if (isKinetic && !props.label) {
     issues.push({
       code: 'FEATURE_NO_LABEL',
@@ -427,7 +427,7 @@ export function checkMapFeatureEnforcement(
     });
   }
 
-  // ── Kinetic: missing severity ────────────────────────────────────────────
+  // Kinetic: missing severity
   if (isKinetic && !props.severity) {
     issues.push({
       code: 'FEATURE_NO_SEVERITY',
@@ -437,7 +437,7 @@ export function checkMapFeatureEnforcement(
     });
   }
 
-  // ── Installation: missing name ───────────────────────────────────────────
+  // Installation: missing name
   if (isInstallation && !props.name) {
     issues.push({
       code: 'FEATURE_NO_NAME',
@@ -447,7 +447,7 @@ export function checkMapFeatureEnforcement(
     });
   }
 
-  // ── Installation: missing description ───────────────────────────────────
+  // Installation: missing description
   if (isInstallation && !props.description) {
     issues.push({
       code: 'FEATURE_NO_DESCRIPTION',

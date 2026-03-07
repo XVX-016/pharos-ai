@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-// ─── Response envelope ───────────────────────────────────────────────────────
+// Response envelope
 
 type JsonInit = Parameters<typeof NextResponse.json>[1];
 
@@ -12,7 +12,7 @@ export function err(code: string, message: string, status = 400, init?: JsonInit
   return NextResponse.json({ ok: false, error: { code, message } }, { ...(init ?? {}), status });
 }
 
-// ─── Query helpers ───────────────────────────────────────────────────────────
+// Query helpers
 
 export function parseQueryArray(param: string | null): string[] {
   if (!param) return [];
@@ -27,7 +27,7 @@ export function parseDayRange(day: string): { gte: Date; lt: Date } {
   return { gte, lt };
 }
 
-// ─── Casualty reassembly ────────────────────────────────────────────────────
+// Casualty reassembly
 
 type CasualtySummaryRow = {
   faction: string;
@@ -68,7 +68,7 @@ export function reassembleCasualties(rows: CasualtySummaryRow[]) {
   };
 }
 
-// ─── Actor type mapping ─────────────────────────────────────────────────────
+// Actor type mapping
 
 export function mapActorTypeToApi(type: string): string {
   if (type === 'NON_STATE') return 'NON-STATE';

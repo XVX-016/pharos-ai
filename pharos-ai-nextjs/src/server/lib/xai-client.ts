@@ -3,7 +3,7 @@
 const XAI_BASE = 'https://api.x.ai/v1';
 const MODEL = 'grok-3-fast';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// Types
 
 export type XAIAnnotation = {
   type: string;
@@ -30,7 +30,7 @@ export type XAIResponse = {
   citations?: string[];
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 function getApiKey(): string {
   const key = process.env.XAI_API_KEY;
@@ -66,7 +66,7 @@ function extractTextAndCitations(response: XAIResponse): {
   return { text, citations };
 }
 
-// ── Core API call ────────────────────────────────────────────────────────────
+// Core API call
 
 async function grokResponses(
   prompt: string,
@@ -104,7 +104,7 @@ async function grokResponses(
   return extractTextAndCitations(data);
 }
 
-// ── Public API ───────────────────────────────────────────────────────────────
+// Public API
 
 export type TweetVerificationResult = {
   exists: boolean;

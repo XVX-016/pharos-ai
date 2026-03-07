@@ -67,7 +67,7 @@ export async function POST(
     if (!actor) return err('VALIDATION', `Actor ${body.actorId} not found`);
   }
 
-  // ── Inline verification via X AI ────────────────────────────────────────
+  // Inline verification via X AI
   let verificationStatus: VerificationStatus = VerificationStatus.UNVERIFIED;
   let verificationResult: Record<string, unknown> | null = null;
   let verifiedAt: Date | null = null;

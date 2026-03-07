@@ -44,7 +44,7 @@ export async function GET(
   const today = now.toISOString().slice(0, 10);
   const todayStart = new Date(today + 'T00:00:00Z');
 
-  // ── Parallel DB queries ───────────────────────────────────────────────────
+  // Parallel DB queries
 
   // Fetch actors first (needed for actorActions query below)
   const actors = await prisma.actor.findMany({
@@ -140,7 +140,7 @@ export async function GET(
     }),
   ]);
 
-  // ── Derived state ─────────────────────────────────────────────────────────
+  // Derived state
 
   const actorIdsWithSnapshot = new Set(actorSnapshotsToday.map(s => s.actorId));
   const actorsWithoutSnapshot = actors.filter(a => !actorIdsWithSnapshot.has(a.id));
@@ -170,11 +170,11 @@ export async function GET(
   const storyGap = Math.max(0, TARGETS.stories - storiesToday);
   const actionGap = Math.max(0, TARGETS.actorActions - actorActionsToday);
 
-  // ── Build todo list ───────────────────────────────────────────────────────
+  // Build todo list
 
   const todos: TodoItem[] = [];
 
-  // ── P1: Broken infrastructure ─────────────────────────────────────────────
+  // P1: Broken infrastructure
 
   if (!todaySnapshot) {
     todos.push({
@@ -218,7 +218,7 @@ export async function GET(
     });
   }
 
-  // ── P1/P2: Daily content production ──────────────────────────────────────
+  // P1/P2: Daily content production
 
   if (eventGap > 0) {
     todos.push({
@@ -282,7 +282,7 @@ export async function GET(
     });
   }
 
-  // ── P2: Actor actions (timeline entries per actor) ────────────────────────
+  // P2: Actor actions (timeline entries per actor)
 
   if (actionGap > 0 && eventsToday.length >= 3) {
     todos.push({
@@ -295,7 +295,7 @@ export async function GET(
     });
   }
 
-  // ── P2: Data quality ──────────────────────────────────────────────────────
+  // P2: Data quality
 
   if (eventsWithoutSources.length > 0) {
     todos.push({
@@ -342,7 +342,7 @@ export async function GET(
     });
   }
 
-  // ── Verification todos ──────────────────────────────────────────────────
+  // Verification todos
 
   if (failedVerificationCount > 0) {
     todos.push({
@@ -367,7 +367,7 @@ export async function GET(
   }
 
 
-  // ── Subagent hints ────────────────────────────────────────────────────────
+  // Subagent hints
 
   const subagentHints: { priority: string; task: string }[] = [];
   if (eventGap >= 8) {
@@ -383,7 +383,7 @@ export async function GET(
     });
   }
 
-  // ── Summary ───────────────────────────────────────────────────────────────
+  // Summary
 
   const p1Count = todos.filter(t => t.priority === 'P1').length;
   const p2Count = todos.filter(t => t.priority === 'P2').length;
