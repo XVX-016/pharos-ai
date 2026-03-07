@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { StrikeContent, MissileContent, TargetContent, AssetContent, ZoneContent } from '@/components/map/MapDetailContent';
 
-import type { SelectedItem } from '@/components/map/MapDetailPanel';
+import type { SelectedItem } from '@/components/map/types';
 import type { MapStory } from '@/types/domain';
 
 const PANEL_LABEL: Record<SelectedItem['type'], string> = {

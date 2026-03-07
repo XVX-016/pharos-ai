@@ -10,7 +10,7 @@ import { fmtTimeZ } from '@/lib/format';
 import { ACT_C, STA_C } from '@/data/iran-actors';
 import XPostCard from '@/components/shared/XPostCard';
 import Flag from '@/components/shared/Flag';
-import { CasChip } from '@/app/dashboard/overview/CasChip';
+import { CasChip } from '@/components/overview/CasChip';
 import { DaySelector } from '@/components/shared/DaySelector';
 import { getConflictForDay, getActorForDay, getEventsForDay, getPostsForDay } from '@/lib/day-filter';
 import type { ConflictDaySnapshot, IntelEvent, Actor, XPost, Conflict } from '@/types/domain';

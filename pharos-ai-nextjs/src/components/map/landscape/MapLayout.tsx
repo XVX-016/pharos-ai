@@ -7,7 +7,7 @@ import { StoryDetailScreen } from './StoryDetailScreen';
 import { EventDetailScreen } from './EventDetailScreen';
 
 import type { MapPageContext } from '@/components/map/use-map-page';
-import type { SelectedItem } from '@/components/map/MapDetailPanel';
+import type { SelectedItem } from '@/components/map/types';
 import type { MapStory } from '@/types/domain';
 
 // ─── Screen stack types ───────────────────────────────────────────────────────

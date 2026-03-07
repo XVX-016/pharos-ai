@@ -11,7 +11,7 @@ import StoryIcon from './StoryIcon';
 
 import type { StrikeArc, MissileTrack, Target, Asset, ThreatZone } from '@/data/map-data';
 import type { MapStory } from '@/types/domain';
-import type { SelectedItem } from './MapDetailPanel';
+import type { SelectedItem } from './types';
 
 // ─── Fallback for unknown actors ────────────────────────────────────────────
 

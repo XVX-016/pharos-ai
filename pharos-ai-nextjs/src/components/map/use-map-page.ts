@@ -20,7 +20,7 @@ import { createBuildTooltip } from '@/lib/map-tooltip';
 import type { MapViewState, PickingInfo } from '@deck.gl/core';
 import type { StrikeArc, MissileTrack, Target, Asset, ThreatZone } from '@/data/map-data';
 import type { OverlayVisibility } from '@/components/map/MapVisibilityMenu';
-import type { SelectedItem } from '@/components/map/MapDetailPanel';
+import type { SelectedItem } from '@/components/map/types';
 
 export function useMapPage({ isMobile }: { isMobile: boolean }) {
   const dispatch = useAppDispatch();

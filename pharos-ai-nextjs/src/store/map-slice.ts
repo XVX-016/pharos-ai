@@ -3,7 +3,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { extractInitialState } from '@/lib/map-filter-engine';
 import type { MapViewState } from '@deck.gl/core';
 import type { MapStory } from '@/types/domain';
-import type { SelectedItem } from '@/components/map/MapDetailPanel';
+import type { SelectedItem } from '@/components/map/types';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

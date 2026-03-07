@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 
 import type { MapPageContext } from '@/components/map/use-map-page';
 import type { MapViewState } from '@deck.gl/core';
-import type { SelectedItem } from '@/components/map/MapDetailPanel';
+import type { SelectedItem } from '@/components/map/types';
 
 type Props = {
   ctx: MapPageContext;

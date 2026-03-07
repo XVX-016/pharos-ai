@@ -7,7 +7,7 @@ import { Map as MapIcon, ArrowRight, Zap, Users, BookOpen, TrendingUp } from 'lu
 import { fmtTimeZ } from '@/lib/format';
 import { SEV_C } from '@/lib/severity-colors';
 import { getConflictForDay, getEventsForDay, getPostsForDay } from '@/lib/day-filter';
-import { CasChip } from '@/app/dashboard/overview/CasChip';
+import { CasChip } from '@/components/overview/CasChip';
 import XPostCard from '@/components/shared/XPostCard';
 
 import { useBootstrap } from '@/api/bootstrap';
