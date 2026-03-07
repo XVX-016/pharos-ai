@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 import type { TimePoint } from '@/types/domain';
+import { err, ok } from '@/server/lib/api-utils';
 
 const CLOB = 'https://clob.polymarket.com';
 
@@ -54,16 +55,16 @@ export async function GET(req: NextRequest) {
   const range = req.nextUrl.searchParams.get('range') ?? '7d';
 
   if (!tokenId) {
-    return NextResponse.json({ error: 'Missing tokenId' }, { status: 400 });
+    return err('MISSING_TOKEN_ID', 'Missing tokenId', 400);
   }
 
   try {
     const history = await getCached(tokenId, range);
-    return NextResponse.json(
+    return ok(
       { history },
       { headers: { 'Cache-Control': 'public, max-age=120, stale-while-revalidate=600' } },
     );
-  } catch (err) {
-    return NextResponse.json({ error: String(err), history: [] }, { status: 500 });
+  } catch (e) {
+    return err('FETCH_ERROR', String(e), 500);
   }
 }

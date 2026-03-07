@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
-
 import type { PredictionMarket,SubMarket } from '@/types/domain';
+import { err, ok } from '@/server/lib/api-utils';
 
 const GAMMA = 'https://gamma-api.polymarket.com';
 
@@ -96,8 +95,8 @@ export async function GET() {
         };
       });
 
-    return NextResponse.json({ markets, fetchedAt: new Date().toISOString() });
-  } catch (err) {
-    return NextResponse.json({ error: String(err), markets: [] }, { status: 500 });
+    return ok({ markets, fetchedAt: new Date().toISOString() });
+  } catch (e) {
+    return err('FETCH_ERROR', String(e), 500);
   }
 }
