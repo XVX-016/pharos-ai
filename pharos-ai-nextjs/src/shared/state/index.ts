@@ -28,7 +28,7 @@ import mapReducer, {
 } from '@/features/map/state/map-slice';
 import type { Column } from '@/features/dashboard/state/presets';
 
-// ─── localStorage persistence ───────────────────────────────────────────────
+// localStorage persistence
 
 const STORAGE_KEY_V4 = 'pharos:workspace:v4';
 const STORAGE_KEY_V3 = 'pharos:workspace:v3';
@@ -36,7 +36,6 @@ const STORAGE_KEY_V3 = 'pharos:workspace:v3';
 function loadPersistedState(): { workspace: WorkspaceState } | undefined {
   if (typeof window === 'undefined') return undefined;
   try {
-    // Try v4 first
     const v4 = localStorage.getItem(STORAGE_KEY_V4);
     if (v4) {
       const parsed = JSON.parse(v4) as Partial<WorkspaceState> & Pick<WorkspaceState, 'columns' | 'activePreset' | 'editing'>;
@@ -66,7 +65,6 @@ function loadPersistedState(): { workspace: WorkspaceState } | undefined {
   return undefined;
 }
 
-// Listener middleware to persist state on relevant actions
 const listenerMiddleware = createListenerMiddleware();
 
 // Persist workspace state
@@ -112,7 +110,7 @@ listenerMiddleware.startListening({
   },
 });
 
-// ─── Store ──────────────────────────────────────────────────────────────────
+// Store
 
 export const store = configureStore({
   reducer: {
@@ -128,8 +126,6 @@ export const store = configureStore({
       },
     }).prepend(listenerMiddleware.middleware),
 });
-
-// ─── Typed hooks ────────────────────────────────────────────────────────────
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

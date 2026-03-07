@@ -6,7 +6,7 @@
  * Component files always reference `cssVar` via var(--token).
  */
 
-// ─── Level 1: Actor ───────────────────────────────────────────────────────────
+// Level 1: Actor
 
 export type ActorKey = string;
 export type Affiliation = 'FRIENDLY' | 'HOSTILE' | 'NEUTRAL';
@@ -19,7 +19,7 @@ export type ActorMeta = {
   group: string;
 };
 
-// ─── Level 2: Category ────────────────────────────────────────────────────────
+// Level 2: Category
 
 export type MarkerCategory = 'KINETIC' | 'INSTALLATION' | 'ZONE';
 
@@ -31,7 +31,7 @@ export const CATEGORY_LABEL: Record<MarkerCategory, string> = {
 
 export const ALL_CATEGORIES: MarkerCategory[] = ['KINETIC', 'INSTALLATION', 'ZONE'];
 
-// ─── Level 3: Type (within category) ─────────────────────────────────────────
+// Level 3: Type
 
 export type KineticType      = 'AIRSTRIKE' | 'NAVAL_STRIKE' | 'BALLISTIC' | 'CRUISE' | 'DRONE';
 export type InstallationType = 'CARRIER' | 'AIR_BASE' | 'NAVAL_BASE' | 'ARMY_BASE' | 'NUCLEAR_SITE' | 'COMMAND' | 'INFRASTRUCTURE';
@@ -61,7 +61,7 @@ export const TYPE_META: Record<string, { label: string; category: MarkerCategory
 // Naval strikes use teal regardless of actor (visual convention: teal = maritime)
 export const NAVAL_RGB: [number, number, number] = [50, 200, 200];
 
-// ─── Level 4: Status ──────────────────────────────────────────────────────────
+// Level 4: Status
 
 export type KineticStatus      = 'COMPLETE' | 'INTERCEPTED' | 'IMPACTED';
 export type InstallationStatus = 'ACTIVE' | 'DEGRADED' | 'STRUCK' | 'DAMAGED' | 'DESTROYED';
@@ -84,7 +84,7 @@ export const KINETIC_STATUSES:      KineticStatus[]      = ['COMPLETE', 'INTERCE
 export const INSTALLATION_STATUSES: InstallationStatus[] = ['ACTIVE', 'DEGRADED', 'STRUCK', 'DAMAGED', 'DESTROYED'];
 export const ALL_STATUSES:          MarkerStatus[]       = [...KINETIC_STATUSES, ...INSTALLATION_STATUSES];
 
-// ─── Level 0: Priority ────────────────────────────────────────────────────────
+// Level 0: Priority
 // Assigned per-record based on strategic importance, not just severity.
 
 export type Priority = 'P1' | 'P2' | 'P3';
@@ -99,12 +99,12 @@ export const PRIORITY_META: Record<Priority, PriorityMeta> = {
 
 export const ALL_PRIORITIES: Priority[] = ['P1', 'P2', 'P3'];
 
-// ─── Layer display config (drives the top-right filter row) ──────────────────
+// Layer display config
 
 export type LayerDisplayMeta = {
-  color:  string;   // active text color  (CSS var)
-  border: string;   // active border color (CSS var)
-  bg:     string;   // active bg color     (CSS var)
+  color:  string;
+  border: string;
+  bg:     string;
 };
 
 // Order matches ALL_LAYERS in use-map-filters.ts

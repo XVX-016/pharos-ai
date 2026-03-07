@@ -1,9 +1,6 @@
-// Central domain types for Pharos.
-// All shared type declarations live here.
-// Data files in src/data/ import from here — they never define types.
-// Component prop types stay local to the component.
+// Central domain types. Data files import from here; component props stay local.
 
-// ── Conflict Days ────────────────────────────────────────────────────────────
+// Conflict Days
 
 export type ConflictDay = string;
 
@@ -33,7 +30,7 @@ export type ConflictDaySnapshot = {
   scenarios: { label: string; subtitle: string; color: string; prob: string; body: string }[];
 };
 
-// ── Conflict ─────────────────────────────────────────────────────────────────
+// Conflict
 
 export type ThreatLevel = 'CRITICAL' | 'HIGH' | 'ELEVATED' | 'MONITORING';
 export type ConflictStatus = 'ONGOING' | 'PAUSED' | 'CEASEFIRE' | 'RESOLVED';
@@ -53,7 +50,7 @@ export type Conflict = {
   commanders: { us: string[]; il: string[]; ir: string[] };
 };
 
-// ── Actors ───────────────────────────────────────────────────────────────────
+// Actors
 
 export type ActivityLevel = 'CRITICAL' | 'HIGH' | 'ELEVATED' | 'MODERATE';
 export type Stance = 'AGGRESSOR' | 'DEFENDER' | 'RETALIATING' | 'PROXY' | 'NEUTRAL' | 'CONDEMNING';
@@ -89,7 +86,7 @@ export type Actor = {
   daySnapshots: Record<ConflictDay, ActorDaySnapshot>;
 };
 
-// ── Events ───────────────────────────────────────────────────────────────────
+// Events
 
 export type Severity = 'CRITICAL' | 'HIGH' | 'STANDARD';
 export type EventType = 'MILITARY' | 'DIPLOMATIC' | 'INTELLIGENCE' | 'ECONOMIC' | 'HUMANITARIAN' | 'POLITICAL';
@@ -124,7 +121,7 @@ export type IntelEvent = {
   tags: string[];
 };
 
-// ── X Posts (Field Signals) ───────────────────────────────────────────────────
+// X Posts (Field Signals)
 
 export type Significance = 'BREAKING' | 'HIGH' | 'STANDARD';
 export type AccountType = 'military' | 'government' | 'journalist' | 'analyst' | 'official';
@@ -161,7 +158,7 @@ export type XPost = {
   xaiCitations?: string[];
 };
 
-// ── Bootstrap ────────────────────────────────────────────────────────────────
+// Bootstrap
 
 export type BootstrapData = {
   conflictId: string;
@@ -172,7 +169,7 @@ export type BootstrapData = {
   escalation: number;
 };
 
-// ── API filter types ─────────────────────────────────────────────────────────
+// API filter types
 
 export type EventFilters = {
   day?: string;
@@ -194,12 +191,12 @@ export type EconFilters = {
   category?: string;
 };
 
-// ── Map data types ───────────────────────────────────────────────────────────
+// Map data types
 // Map feature types (StrikeArc, MissileTrack, etc.) use Extract<> from map
 // token enums — they stay in src/data/map-data.ts, co-located with their
 // token definitions. MapDataResponse re-exports them for the API layer.
 
-// ── Map stories ───────────────────────────────────────────────────────────────
+// Map stories
 
 export type StoryEvent = {
   time: string;
@@ -224,7 +221,7 @@ export type MapStory = {
   events: StoryEvent[];
 };
 
-// ── RSS News Feed ─────────────────────────────────────────────────────────────
+// RSS News Feed
 
 export type FeedItem = {
   title: string;
@@ -246,19 +243,15 @@ export type FeedResult = {
   fresh?: boolean;
 };
 
-// ── RSS Feed Sources ──────────────────────────────────────────────────────────
+// RSS Feed Sources
 
 export type RssFeed = {
   id: string;
   name: string;
   url: string;
-  /** Bias/perspective label */
   perspective: 'WESTERN' | 'US_GOV' | 'ISRAELI' | 'IRANIAN' | 'ARAB' | 'RUSSIAN' | 'CHINESE' | 'INDEPENDENT' | 'INTL_ORG';
-  /** Country of origin */
   country: string;
-  /** Tags for filtering */
   tags: string[];
-  /** Whether this is a state-funded outlet */
   stateFunded?: boolean;
   /**
    * Source importance tier (1–4). Determines proximity to the timeline spine.
@@ -274,7 +267,7 @@ export type ConflictCollection = {
   id: string;
   name: string;
   description: string;
-  /** The 4 key channels for this conflict */
+  /** Channels for this conflict */
   channels: ConflictChannel[];
 };
 
@@ -286,7 +279,7 @@ export type ConflictChannel = {
   color: string;
 };
 
-// ── Economic Indexes ──────────────────────────────────────────────────────────
+// Economic Indexes
 
 export type EconCategory = 'ENERGY' | 'SAFE_HAVEN' | 'EQUITIES' | 'VOLATILITY' | 'CURRENCY' | 'DEFENSE' | 'SHIPPING';
 
@@ -302,14 +295,14 @@ export type EconomicIndex = {
   color: string;
 };
 
-// ── Time-series points ────────────────────────────────────────────────────────
+// Time-series points
 
 export type TimePoint = {
   t: number;  // unix timestamp (seconds)
   p: number;  // probability / price 0–1
 };
 
-// ── Prediction markets ────────────────────────────────────────────────────────
+// Prediction markets
 
 export type SubMarket = {
   id: string;
@@ -365,7 +358,7 @@ export type PredictionMarket = {
   subMarkets: SubMarket[];
 };
 
-// ── Market data (financial) ───────────────────────────────────────────────────
+// Market data (financial)
 
 export type MarketResult = {
   ticker: string;
