@@ -13,6 +13,12 @@ export function BrowseNav() {
 
       <nav className="flex items-center gap-5">
         <Link
+          href="/browse/api/reference"
+          className="no-underline mono text-xs text-[var(--t3)] hover:text-[var(--t1)] transition-colors"
+        >
+          API
+        </Link>
+        <Link
           href="/dashboard"
           className="no-underline mono text-xs text-[var(--t3)] hover:text-[var(--t1)] transition-colors"
         >
