@@ -1,6 +1,6 @@
 import { fmtDate, fmtTimeZ } from '@/shared/lib/format';
 
-import { BrowseBreadcrumb } from './BrowseBreadcrumb';
+import { BrowsePageHeader } from './BrowsePageHeader';
 import { CategoryBadge } from './CategoryBadge';
 
 type StoryEvent = {
@@ -37,7 +37,7 @@ const EVENT_COLOR: Record<string, string> = {
 export function StoryArticle({ story }: Props) {
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
-      <BrowseBreadcrumb
+      <BrowsePageHeader
         crumbs={[
           { label: 'Stories', href: '/browse/stories' },
           { label: story.title },

@@ -1,4 +1,4 @@
-import { BrowseBreadcrumb } from './BrowseBreadcrumb';
+import { BrowsePageHeader } from './BrowsePageHeader';
 import { CasualtyTable } from './CasualtyTable';
 import { EconomicChipGrid } from './EconomicChipGrid';
 import { EscalationBar } from './EscalationBar';
@@ -46,7 +46,7 @@ type Props = {
 export function BriefArticle({ brief }: Props) {
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
-      <BrowseBreadcrumb
+      <BrowsePageHeader
         crumbs={[
           { label: 'Briefs', href: '/browse/brief' },
           { label: brief.dayLabel },

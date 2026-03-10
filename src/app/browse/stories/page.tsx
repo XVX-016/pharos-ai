@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { BrowseBreadcrumb } from '@/features/browse/components/BrowseBreadcrumb';
+import { BrowsePageHeader } from '@/features/browse/components/BrowsePageHeader';
 import { StoryList } from '@/features/browse/components/StoryList';
 import { getStories } from '@/features/browse/queries';
 
@@ -16,7 +16,7 @@ export default async function BrowseStoriesPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
-      <BrowseBreadcrumb crumbs={[{ label: 'Stories' }]} autoRefresh />
+      <BrowsePageHeader crumbs={[{ label: 'Stories' }]} autoRefresh />
 
       <header className="mt-6 mb-8">
         <p className="label mb-2">Conflict narratives</p>

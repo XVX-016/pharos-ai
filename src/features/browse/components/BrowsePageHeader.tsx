@@ -23,7 +23,7 @@ type Props = {
   autoRefresh?: boolean;
 };
 
-export function BrowseBreadcrumb({ crumbs, autoRefresh }: Props) {
+export function BrowsePageHeader({ crumbs, autoRefresh }: Props) {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-4">

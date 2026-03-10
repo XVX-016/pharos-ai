@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 import { ActorGrid } from '@/features/browse/components/ActorGrid';
-import { BrowseBreadcrumb } from '@/features/browse/components/BrowseBreadcrumb';
+import { BrowsePageHeader } from '@/features/browse/components/BrowsePageHeader';
 import { BrowsePagination } from '@/features/browse/components/BrowsePagination';
 import { getActors, PAGE_SIZE } from '@/features/browse/queries';
 
@@ -39,7 +39,7 @@ export default async function BrowseActorsPage({ searchParams }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
-      <BrowseBreadcrumb crumbs={[{ label: 'Actors' }]} autoRefresh />
+      <BrowsePageHeader crumbs={[{ label: 'Actors' }]} autoRefresh />
 
       <header className="mt-6 mb-8">
         <p className="label mb-2">Intelligence profiles</p>

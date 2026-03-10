@@ -5,7 +5,7 @@ import type { ActivityLevel, Stance } from '@/types/domain';
 
 import { ActorProfileActions } from './ActorProfileActions';
 import { ActorProfileResponses } from './ActorProfileResponses';
-import { BrowseBreadcrumb } from './BrowseBreadcrumb';
+import { BrowsePageHeader } from './BrowsePageHeader';
 
 type Actor = {
   id: string;
@@ -42,7 +42,7 @@ export function ActorProfile({ actor }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
-      <BrowseBreadcrumb
+      <BrowsePageHeader
         crumbs={[
           { label: 'Actors', href: '/browse/actors' },
           { label: actor.name },

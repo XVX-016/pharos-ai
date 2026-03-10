@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 import { BriefList } from '@/features/browse/components/BriefList';
-import { BrowseBreadcrumb } from '@/features/browse/components/BrowseBreadcrumb';
+import { BrowsePageHeader } from '@/features/browse/components/BrowsePageHeader';
 import { BrowsePagination } from '@/features/browse/components/BrowsePagination';
 import { getBriefs, PAGE_SIZE } from '@/features/browse/queries';
 
@@ -28,7 +28,7 @@ export default async function BrowseBriefPage({ searchParams }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-8">
-      <BrowseBreadcrumb crumbs={[{ label: 'Briefs' }]} autoRefresh />
+      <BrowsePageHeader crumbs={[{ label: 'Briefs' }]} autoRefresh />
 
       <header className="mt-6 mb-8">
         <p className="label mb-2">Intelligence briefs</p>

@@ -1,5 +1,5 @@
 import { ActorResponseList } from '@/features/browse/components/ActorResponseList';
-import { BrowseBreadcrumb } from '@/features/browse/components/BrowseBreadcrumb';
+import { BrowsePageHeader } from '@/features/browse/components/BrowsePageHeader';
 import { SeverityBadge } from '@/features/browse/components/SeverityBadge';
 import { SignalCard } from '@/features/browse/components/SignalCard';
 import { SourceList } from '@/features/browse/components/SourceList';
@@ -53,7 +53,7 @@ type Props = {
 export function EventArticle({ event, signals }: Props) {
   return (
     <article className="max-w-2xl mx-auto px-6 py-10">
-      <BrowseBreadcrumb
+      <BrowsePageHeader
         crumbs={[
           { label: 'Events', href: '/browse/events' },
           { label: event.title },
