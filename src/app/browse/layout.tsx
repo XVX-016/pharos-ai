@@ -1,9 +1,13 @@
-import { BrowseShell } from '@/features/browse/components/BrowseShell';
+import { BrowseShell } from '@/features/browse/components/layout/BrowseShell';
+import { ViewportHeightSync } from '@/shared/components/layout/ViewportHeightSync';
 
 export default function BrowseLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div data-theme="auto" className="h-screen flex flex-col bg-[var(--bg-app)]">
-      <BrowseShell>{children}</BrowseShell>
-    </div>
+    <>
+      <ViewportHeightSync />
+      <div data-theme="auto" className="browse-shell bg-[var(--bg-app)]">
+        <BrowseShell>{children}</BrowseShell>
+      </div>
+    </>
   );
 }

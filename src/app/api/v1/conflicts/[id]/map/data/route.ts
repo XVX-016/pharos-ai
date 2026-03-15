@@ -2,16 +2,26 @@ import { NextRequest } from 'next/server';
 
 import { err, ok, parseQueryArray } from '@/server/lib/api-utils';
 import { prisma } from '@/server/lib/db';
+import { MapFeatureType } from '@/generated/prisma/enums';
+
+const VALID_FEATURE_TYPES = Object.values(MapFeatureType) as string[];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const datasets = parseQueryArray(req.nextUrl.searchParams.get('datasets'));
 
+  if (datasets.length > 0) {
+    const invalid = datasets.filter(d => !VALID_FEATURE_TYPES.includes(d));
+    if (invalid.length > 0) {
+      return err('VALIDATION', `Invalid dataset value(s): ${invalid.join(', ')}. Valid values: ${VALID_FEATURE_TYPES.join(', ')}`, 400);
+    }
+  }
+
   const [features, actors] = await Promise.all([
     prisma.mapFeature.findMany({
       where: {
         conflictId: id,
-        ...(datasets.length > 0 ? { featureType: { in: datasets as never[] } } : {}),
+        ...(datasets.length > 0 ? { featureType: { in: datasets as MapFeatureType[] } } : {}),
       },
       orderBy: { timestamp: 'asc' },
       select: {
@@ -42,6 +52,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   type Geo = Record<string, unknown>;
   type Props = Record<string, unknown>;
 
+  const KINETIC_DEFAULT = 'COMPLETE';
+  const INSTALLATION_DEFAULT = 'ACTIVE';
+
+  /** Normalize status: uppercase + default for null/unknown. */
+  function normStatus(raw: string | null, featureType: string): string {
+    if (!raw) return featureType === 'STRIKE_ARC' || featureType === 'MISSILE_TRACK' ? KINETIC_DEFAULT : INSTALLATION_DEFAULT;
+    const upper = raw.toUpperCase();
+    const valid = ['COMPLETE', 'INTERCEPTED', 'IMPACTED', 'ACTIVE', 'DEGRADED', 'STRUCK', 'DAMAGED', 'DESTROYED'];
+    return valid.includes(upper) ? upper : (featureType === 'STRIKE_ARC' || featureType === 'MISSILE_TRACK' ? KINETIC_DEFAULT : INSTALLATION_DEFAULT);
+  }
+
   const strikes = features
     .filter(f => f.featureType === 'STRIKE_ARC')
     .map(f => {
@@ -49,7 +70,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         const props = f.properties as Props;
         return {
           id: f.id, sourceEventId: f.sourceEventId, actor: f.actor, priority: f.priority, category: f.category, type: f.type,
-          status: f.status, timestamp: f.timestamp?.toISOString() ?? '',
+          status: normStatus(f.status, f.featureType), timestamp: f.timestamp?.toISOString() ?? '',
           from: geo.from, to: geo.to, label: props.label, severity: props.severity,
         };
     });
@@ -61,7 +82,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         const props = f.properties as Props;
         return {
           id: f.id, sourceEventId: f.sourceEventId, actor: f.actor, priority: f.priority, category: f.category, type: f.type,
-          status: f.status, timestamp: f.timestamp?.toISOString() ?? '',
+          status: normStatus(f.status, f.featureType), timestamp: f.timestamp?.toISOString() ?? '',
           from: geo.from, to: geo.to, label: props.label, severity: props.severity,
         };
     });
@@ -73,7 +94,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         const props = f.properties as Props;
         return {
           id: f.id, sourceEventId: f.sourceEventId, actor: f.actor, priority: f.priority, category: f.category, type: f.type,
-          status: f.status, timestamp: f.timestamp?.toISOString() ?? '',
+          status: normStatus(f.status, f.featureType), timestamp: f.timestamp?.toISOString() ?? '',
           position: geo.position, name: props.name, description: props.description,
         };
     });
@@ -85,7 +106,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         const props = f.properties as Props;
         return {
           id: f.id, sourceEventId: f.sourceEventId, actor: f.actor, priority: f.priority, category: f.category, type: f.type,
-          status: f.status, timestamp: f.timestamp?.toISOString() ?? '',
+          status: normStatus(f.status, f.featureType), timestamp: f.timestamp?.toISOString() ?? '',
           position: geo.position, name: props.name, description: props.description,
         };
     });

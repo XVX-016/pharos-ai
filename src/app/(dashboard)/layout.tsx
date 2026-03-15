@@ -5,9 +5,9 @@ export default function DashboardShellLayout({ children }: { children: React.Rea
   return (
     <>
       <ViewportHeightSync />
-      <div className="flex flex-col min-h-0 overflow-hidden" style={{ height: 'var(--app-height)' }}>
+      <div className="dashboard-shell bg-[var(--bg-app)]">
         <Header />
-        <div className="flex flex-1 min-h-0 overflow-hidden pb-[var(--safe-bottom)]">
+        <div className="flex flex-1 min-h-0 pb-[var(--safe-bottom)] md:overflow-hidden">
           {children}
         </div>
       </div>

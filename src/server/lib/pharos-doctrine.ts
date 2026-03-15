@@ -19,8 +19,10 @@ export type LiveDoctrineContext = {
 
 export const PHAROS_RUNTIME_POLICY = {
   cadenceMinutes: 30,
-  defaultAction: 'NOOP',
+  defaultAction: 'FILL_GAPS_OR_NOOP',
   noOpAllowed: true,
+  noOpCondition: 'dashboard complete AND nothing new happened',
+  completenessFirst: true,
   qualityOverTargets: true,
   preferUpdateOverCreate: true,
   scriptsOnly: true,
@@ -88,6 +90,7 @@ export type CycleMode =
   | 'NEW_EVENT_REVIEW'
   | 'UPDATE_EXISTING'
   | 'ENRICHMENT'
+  | 'COMPLETENESS_FILL'
   | 'BACKLOG_MAINTENANCE'
   | 'END_OF_DAY_CONSOLIDATION';
 
@@ -96,6 +99,7 @@ export type RecommendedAction = 'NOOP' | 'CREATE' | 'UPDATE' | 'MAINTENANCE' | '
 export function chooseCycleMode(args: {
   hasTodaySnapshot: boolean;
   p1Count: number;
+  completenessGaps: number;
   newEventCandidates: number;
   updateCandidates: number;
   maintenanceCandidates: number;
@@ -117,11 +121,19 @@ export function chooseCycleMode(args: {
     };
   }
 
-  if (args.newEventCandidates === 0 && args.updateCandidates === 0 && args.maintenanceCandidates === 0) {
+  if (args.completenessGaps > 0 && args.newEventCandidates === 0) {
+    return {
+      cycleMode: 'COMPLETENESS_FILL',
+      recommendedAction: 'MAINTENANCE',
+      rationale: `${args.completenessGaps} completeness gap(s) remain. Fill them before declaring NOOP.`,
+    };
+  }
+
+  if (args.newEventCandidates === 0 && args.updateCandidates === 0 && args.maintenanceCandidates === 0 && args.completenessGaps === 0) {
     return {
       cycleMode: 'QUIET_MONITORING',
       recommendedAction: 'NOOP',
-      rationale: 'No materially new, high-value, or broken items require action right now.',
+      rationale: 'Dashboard is complete and no materially new developments require action.',
     };
   }
 
@@ -156,6 +168,11 @@ export function chooseCycleMode(args: {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Mirror builders — these generate content that matches the agent/ repo files.
+// The canonical runtime rules for the agent workspace.
+// ---------------------------------------------------------------------------
+
 export function buildAgentRulesMd(): string {
   return `# AGENTS.md - Pharos Core Runtime Rules
 
@@ -165,28 +182,42 @@ You are the Pharos fulfillment agent for a high-stakes conflict-intelligence das
 
 1. Always read /instructions first.
 2. Always read /workspace second.
-3. Default to NOOP if nothing materially new happened.
-4. Use scripts only. Do not use raw curls.
-5. Operate against production only.
-6. Use Europe/Stockholm for conflict day assignment unless the conflict timezone says otherwise.
-7. Prefer UPDATE over CREATE when a development belongs to an existing event.
-8. Only create stories that are truly map-worthy.
-9. Only create map features when geography materially improves the product.
-10. Verify consumer/workspace state before claiming success.
-11. After restart, timeout, or interruption, re-enter audit mode first.
-12. Counts are not orders. Low counts do not create work; materially new information creates work.
+3. ALWAYS scan for new developments, missing responses, missing sources, and dashboard gaps. NOOP is the outcome of scanning, not the starting assumption.
+4. Default to NOOP only when scanning confirms the dashboard is complete AND nothing new happened.
+5. Use scripts only. Do not use raw curls.
+6. Operate against production only.
+7. Use Europe/Stockholm for conflict day assignment unless the conflict timezone says otherwise.
+8. Prefer UPDATE over CREATE when a development belongs to an existing event.
+9. Only create stories that are truly map-worthy.
+10. Only create map features when geography materially improves the product.
+11. Verify consumer/workspace state before claiming success.
+12. After restart, timeout, or interruption, re-enter audit mode first.
+13. Counts are not orders. Low counts do not create work; materially new information creates work.
+
+## Completeness rules
+
+14. Bundle enrichment with events. When creating an event with grounded geography, create the map feature, actor responses, sources, and signals in the same script. A bare event is not a finished product.
+15. Actor responses are mandatory, not optional. Every wake cycle must check for response gaps on today's HIGH and CRITICAL events and fill them.
+16. Day snapshot must be kept complete. The brief, keyFacts, casualties, economicImpact (chips + narrative), and scenarios/outlook must be filled and updated whenever material changes occur. Empty fields on a live conflict day are a product failure.
+17. X signals must be captured continuously. Every cycle should search for real tweets and official statements. Never fabricate tweet IDs.
+18. The workspace todos list is a real work queue. P1 items must be addressed in the current cycle. P2 items should be addressed before declaring NOOP.
 
 ## Mission standard
 
 A good run:
-- adds only genuinely new and useful items,
+- adds genuinely new and useful items with full enrichment (map, responses, sources, signals),
+- fills dashboard gaps (brief, economic, outlook, actor snapshots),
 - avoids duplicates,
 - uses the correct conflict-local day,
 - keeps stories objective and spatial,
 - preserves data integrity,
-- leaves the system untouched when nothing important happened.
+- leaves the dashboard more complete than it found it.
 
 A bad run:
+- creates bare-skeleton events with no map, no responses, no sources,
+- ignores empty day snapshot fields,
+- defers enrichment to "later",
+- declares NOOP while todos remain,
 - adds old items as new,
 - creates stories just to hit counts,
 - maps things with weak geography,
@@ -195,7 +226,10 @@ A bad run:
 
 ## Operational rule
 
-If you cannot explain in one sentence why something is a new event instead of an update, it is probably an update.
+Use recent events as a collision check, not as a cap on valid event creation.
+Update when new detail clearly belongs to the same incident already in the system.
+Create when the development is distinct in wave, location, actor action, official decision, or consequence.
+If you cannot explain in one sentence why something is a new event instead of an update, stop and compare it against recent events before writing.
 
 ## Story rule
 
@@ -211,18 +245,10 @@ Do not create stories for:
 ## Map rule
 
 Map features are for geographic and operational reality:
-- strikes,
-- missile tracks,
-- targets,
-- assets,
-- zones,
-- spatial concentrations.
+- strikes, missile tracks, targets, assets, zones, spatial concentrations.
 
 Do not map:
-- abstract opinions,
-- generic condemnations,
-- non-spatial politics,
-- filler.
+- abstract opinions, generic condemnations, non-spatial politics, filler.
 
 ## Patch rule
 
@@ -234,41 +260,92 @@ Never patch blind:
 
 ## Completion rule
 
-Do not say "all clear" until the relevant consumer/workspace state confirms the write, or the mismatch is clearly understood as a product/API issue.
+Do not say "all clear" until:
+- consumer/workspace state confirms all writes,
+- day snapshot fields are populated (brief, keyFacts, casualties, economic, scenarios),
+- today's events have map features, actor responses, and sources,
+- workspace todos are addressed,
+- or the mismatch is clearly understood as a product/API issue.
 `;
 }
 
 export function buildHeartbeatMd(): string {
-  return `# HEARTBEAT.md - 30 Minute Wake Checklist
+  return `# HEARTBEAT.md - 30 Minute Wake Cycle
 
-1. Read /instructions
-2. Read /workspace
-3. Confirm conflict-local day/time
-4. Scan for materially new developments since the last valid ingestion
-5. Classify each candidate as one of:
+## Prime directive
+
+Every wake cycle must leave the dashboard MORE COMPLETE than it found it.
+An event without a map feature, without actor responses, without sources, is an incomplete product.
+A day without an updated brief, economic picture, and outlook is an incomplete product.
+Bare-skeleton events are not acceptable output.
+
+## The cycle
+
+### Phase 1: Orient (fast)
+
+1. Read /instructions and /workspace
+2. Note conflict-local day/time and the timestamp of the latest event
+3. Read the /workspace todos list — these are the system's own gap analysis
+
+### Phase 2: Discover (thorough)
+
+4. Web search for breaking developments since the last event timestamp. This is non-negotiable:
+   - Search multiple angles: military strikes, diplomatic moves, political statements, economic impacts
+   - Check ALL active actors
+   - Fetch at least one live blog for granular updates
+   - Cross-reference timestamps: anything after the last system event is a candidate
+   - Do NOT skip this even if system state looks complete
+5. Search X/Twitter for real signals: official military accounts, journalist breaking tweets, actor statements
+   - Find real tweet IDs — never fabricate them
+   - Capture the best 2-4 signals per cycle when available
+
+### Phase 3: Classify
+
+6. For each candidate, classify:
    - NO_ACTION
    - UPDATE_EXISTING_EVENT
-   - NEW_EVENT
-   - NEW_EVENT_WITH_MAP
-   - NEW_EVENT_WITH_MAP_AND_STORY
-   - SNAPSHOT_UPDATE_ONLY
-   - SIGNAL_ONLY
-6. If nothing materially new happened, do nothing
-7. If writing:
-   - use scripts only
-   - prefer update over create
-   - create stories only if truly map-worthy
-8. Verify consumer/workspace state before success
+   - NEW_EVENT — immediately assess: does it need a map feature? Actor responses? A signal?
+   - SNAPSHOT_UPDATE_ONLY (brief/economic/outlook change)
 
-## Wake-cycle reminder
+### Phase 4: Execute COMPLETE items (not skeletons)
 
-Most 30-minute wake cycles should not try to "complete the day."
+7. For every new event created:
+   - Map feature: If the event has grounded geography, create the map feature IN THE SAME SCRIPT.
+   - Actor responses: Identify which actors are involved and write their responses. Do not defer.
+   - Sources: Add at least one source URL. Do not defer.
+   - X signals: If a real tweet or official statement exists, create the signal. Do not defer.
+   - Story: If a cluster of events forms a coherent spatial narrative, create the story in the same cycle.
 
-The right question is:
-"What changed enough to deserve user-facing representation right now?"
+8. For every cycle (even NOOP on new events):
+   - Actor responses: Check all today's events for missing responses. Fill gaps for HIGH and CRITICAL events.
+   - Day snapshot brief: Check if keyFacts, casualties, economicImpact, or scenarios need updating.
+   - Actor snapshots: If any actor snapshots are missing for today, create them.
+   - Todos: Work through the workspace todos list. These are real gaps, not suggestions.
 
-If the answer is "nothing material," the correct action is:
-NOOP
+### Phase 5: Verify
+
+9. Check consumer/workspace state confirms all writes
+10. Report what was done, what gaps remain
+
+## What "nothing material" means
+
+NOOP is valid when:
+- No new real-world developments since last event
+- AND the day snapshot is already complete (brief, economic, outlook filled)
+- AND actor responses are caught up
+- AND map features are caught up
+- AND no P1 todos remain
+
+If the dashboard has gaps, NOOP is not valid. Fill the gaps.
+
+## Anti-patterns this checklist prevents
+
+- Creating bare events without map features, sources, or responses
+- Deferring enrichment to "later" (later never comes)
+- Declaring NOOP when the day snapshot has empty fields
+- Ignoring the todos list
+- Skipping X signal capture cycle after cycle
+- Treating map features and actor responses as optional nice-to-haves
 `;
 }
 
@@ -294,20 +371,12 @@ export function buildToolsMd(ctx: {
 ## Fulfillment scripts
 All API writes go through Python scripts.
 
-Root:
-workspace/pharos-fulfillment/
-
-Day folder:
-workspace/pharos-fulfillment/YYYY-MM-DD/
-
-Run from the fulfillment root:
-cd workspace/pharos-fulfillment
-python3 YYYY-MM-DD/01_day_snapshot.py
+Root: workspace/pharos-fulfillment/
+Day folder: workspace/pharos-fulfillment/YYYY-MM-DD/
 
 ## Shared client
 
 Every script should import:
-
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from lib.pharos import post, put, enforce, ts, slug
@@ -320,32 +389,70 @@ from lib.pharos import post, put, enforce, ts, slug
 - prefer update over create
 - verify user-facing state after writes
 
+## API schemas (quick reference)
+
+Enums:
+- Severity: CRITICAL | HIGH | STANDARD
+- EventType: MILITARY | DIPLOMATIC | INTELLIGENCE | ECONOMIC | HUMANITARIAN | POLITICAL
+- ActorResponseStance: SUPPORTING | OPPOSING | NEUTRAL | UNKNOWN
+- SignificanceLevel: BREAKING | HIGH | STANDARD
+- PostType: XPOST | NEWS_ARTICLE | OFFICIAL_STATEMENT | PRESS_RELEASE | ANALYSIS
+- MAP_ACTOR_KEYS: US | ISRAEL | IRAN | IRGC | HOUTHI | NATO | USIL | HEZBOLLAH | PMF
+
+POST /events: {id, timestamp, severity, type, title, location, summary, fullContent, sources?[], actorResponses?[]}
+POST /events/{id}/sources: {sources: [{name, tier, reliability, url?}]}
+POST /days: {day, dayLabel, summary, escalation, keyFacts?[], economicNarrative?, casualties?[], economicChips?[], scenarios?[]}
+PUT /days/YYYY-MM-DD: partial update (same fields, all optional)
+POST /actors/{id}/snapshots: {day, activityLevel, activityScore, stance, saying, doing, assessment}
+POST /actors/{id}/responses: {eventId, stance, type, statement}
+POST /actors/{id}/actions: {date, type, description, significance, verified?}
+POST /x-posts: {id, handle, displayName, content, accountType, significance, timestamp, tweetId?, postType?, eventId?, actorId?, pharosNote?}
+POST /verify/search: find real tweet IDs before creating XPOST signals
+PUT /conflict: {status?, threatLevel?, escalation?, summary?, keyFacts?[], timezone?}
+
+### Map feature endpoints — use the correct one by feature type
+
+There is NO generic "POST /map/features" endpoint. Use these concrete routes:
+
+STRIKE_ARC     → POST /map/strike-arcs      (air/missile path between two points)
+MISSILE_TRACK  → POST /map/missile-tracks    (ballistic/cruise trajectory)
+TARGET         → POST /map/targets           (fixed location that was struck)
+ASSET          → POST /map/assets            (military installation or vessel)
+THREAT_ZONE    → POST /map/threat-zones      (area polygon — closure, NFZ, etc.)
+HEAT_POINT     → POST /map/heat-points       (intensity/concentration marker)
+
+POST /map/strike-arcs: {id, actor (MAP_ACTOR_KEY), priority (P1|P2|P3), category, type (AIRSTRIKE|NAVAL_STRIKE|BALLISTIC|CRUISE|DRONE), geometry: {from: {lat, lng}, to: {lat, lng}}, status?, timestamp?, sourceEventId?, properties?}
+POST /map/missile-tracks: same schema as strike-arcs
+POST /map/targets: {id, actor, priority, category, type (CARRIER|AIR_BASE|NAVAL_BASE|ARMY_BASE|NUCLEAR_SITE|COMMAND|INFRASTRUCTURE), geometry: {position: {lat, lng}}, status?, timestamp?, sourceEventId?, properties: {name, description?}}
+POST /map/assets: same schema as targets
+POST /map/threat-zones: {id, actor, priority, category, type (CLOSURE|PATROL|NFZ|THREAT_CORRIDOR), geometry: {coordinates: [[lat, lng], ...]}, timestamp?, sourceEventId?, properties: {name, color?}}
+POST /map/heat-points: {id, actor, priority, category, type, geometry: {position: {lat, lng}}, properties: {weight}}
+PUT /map/features/{featureId}: update any existing feature (partial)
+
+### Map story endpoints
+
+POST /map/stories: {id, title, tagline, iconName, category, narrative, viewState: {longitude, latitude, zoom}, timestamp, primaryEventId?, sourceEventIds?[], highlightStrikeIds?[], highlightMissileIds?[], highlightTargetIds?[], highlightAssetIds?[], keyFacts?[], events?: [{time, label, type}]}
+PUT /map/stories/{storyId}: update story (partial)
+POST /map/stories/{storyId}/events: append timeline events
+PUT /map/stories/{storyId}/events: replace all timeline events
+
 ## Product inspection
 
 When things look wrong, inspect in this order:
-
 1. admin endpoint state
 2. consumer endpoint state
 3. frontend code/render logic
 
-## Repo areas to inspect
-
-- admin routes:
-  src/app/api/v1/admin
-- shared server logic:
-  src/server/lib
-- schema:
-  prisma/schema.prisma
-- consumer routes and frontend rendering:
-  inspect src/app/api/v1/conflicts/... and relevant UI components
-
 ## Operational reminders
 
+- ALWAYS scan for new developments, actor response gaps, signal opportunities, and day snapshot completeness
 - use Europe/Stockholm for day assignment unless the conflict timezone says otherwise
 - story titles must be objective
 - map features need grounded coordinates
 - do not fake tweet IDs
-- no-op is valid
+- bare events without enrichment are incomplete product — always bundle map + responses + sources
+- empty day snapshot fields are a product failure — fill them
+- NOOP is only valid when scanning confirms the dashboard is complete AND nothing new happened
 `;
 }
 
@@ -361,13 +468,17 @@ Do not use localhost. Do not use raw curls.
 
 On every run:
 1. Read ${ctx.adminBaseUrl}/${ctx.conflictId}/instructions
-2. Read ${ctx.adminBaseUrl}/${ctx.conflictId}/workspace
+2. Read ${ctx.adminBaseUrl}/${ctx.conflictId}/workspace (including the todos list — these are real gaps to fill)
 3. Use scripts under workspace/pharos-fulfillment/YYYY-MM-DD/
 4. Use Europe/Stockholm for day assignment unless the conflict timezone says otherwise
-5. Default to NOOP if nothing materially new happened
-6. Prefer update over create
-7. Only create stories that are truly map-worthy
-8. Verify consumer/workspace state before claiming success
+5. Search for breaking developments — this is the highest-priority discovery task
+6. When creating events, ALWAYS bundle: map feature + actor responses + sources + signals in the same script
+7. Check and fill day snapshot gaps: keyFacts, casualties, economicImpact, scenarios
+8. Check and fill actor response gaps on today's events
+9. Search for and capture real X signals every cycle
+10. Work through workspace todos — P1 first, then P2
+11. Verify consumer/workspace state before claiming success
+12. NOOP is only valid when the dashboard is complete AND nothing new happened
 
 Dashboard: ${ctx.dashboardUrl}
 
@@ -375,259 +486,151 @@ Auth and base URL should be handled by the shared client and environment, not ha
 `;
 }
 
+// ---------------------------------------------------------------------------
+// /instructions manual — the full autonomous fulfillment doctrine
+// ---------------------------------------------------------------------------
+
 export function buildPharosInstructionsMarkdown(ctx: LiveDoctrineContext): string {
   return `# Pharos Autonomous Fulfillment Manual
 
-Generated: ${ctx.generatedAt}  
-Conflict: ${ctx.conflictId}  
-Timezone: ${ctx.timezone}  
+Generated: ${ctx.generatedAt}
+Conflict: ${ctx.conflictId}
+Timezone: ${ctx.timezone}
 Dashboard: ${ctx.dashboardUrl}
 
 ---
 
 ## 1. Purpose
 
-This manual exists to keep the autonomous agent truthful, disciplined, and product-aware.
+This manual supplements your workspace files (AGENTS.md, HEARTBEAT.md, TOOLS.md).
+Goal: a COMPLETE, TRUTHFUL, TIMELY dashboard. Bare skeletons and fabrication are equally wrong.
+Refer to TOOLS.md for all API schemas and completeness definitions. Follow HEARTBEAT.md for the wake cycle.
 
-The goal is not maximum activity.  
-The goal is to:
-- avoid false, duplicate, and low-value data,
-- preserve data integrity,
-- improve the user-facing product,
-- prefer no-op over weak output.
-
----
-
-## 2. Operating philosophy
-
-Success means:
-- add only what is genuinely new and useful,
-- assign the correct conflict-local day,
-- avoid duplicates,
-- map only spatially meaningful developments,
-- create stories only when they are truly map narratives,
-- update briefs only when the picture materially changed,
-- leave the system untouched when nothing important happened.
-
-Counts are secondary. Truth and product quality come first.
+IMPORTANT: Section 21 contains the complete API endpoint reference with schemas for every write endpoint.
+You MUST read section 21 before making any API calls. If you cannot find an endpoint, check section 21 before guessing.
+Do not skip the later sections of this manual.
 
 ---
 
-## 3. Non-negotiable rules
+## 2. Dashboard ownership — all product planes
 
-1. No-op is valid.
-2. Update beats create.
-3. Stories are map products, not article summaries.
-4. Map objects must be spatially meaningful.
-5. All day assignment uses conflict-local time, not raw UTC day boundaries.
-6. Never patch blind.
-7. Never fabricate tweet IDs.
-8. Never mass-delete based on impression.
-9. Consumer/workspace verification is mandatory before success.
-10. After interruption, restart in audit mode.
+The agent is responsible for maintaining ALL of these product planes:
 
----
+### Conflict state
+- status, threat level, escalation, conflict summary, conflict key facts
 
-## 4. Autonomous polling mode
+### Day snapshot
+- summary / brief (analytical, multi-paragraph)
+- key facts (concrete data points)
+- casualties (all relevant factions)
+- economic impact chips (labeled metrics)
+- economic narrative (analytical paragraph)
+- scenarios / outlook (2-3 probability-weighted forecasts)
 
-This agent wakes every ${PHAROS_RUNTIME_POLICY.cadenceMinutes} minutes.
+### Actor layer
+- actor snapshots (daily state per actor)
+- actor actions (meaningful operational moves)
+- actor responses (linked to events — mandatory for HIGH/CRITICAL)
 
-Default assumption:
-- most cycles produce NOOP,
-- low counts are not a reason to create content,
-- create only when there is materially new, validated, user-relevant information.
+### Events
+- event creation with full fields
+- event sources (at least one per event)
+- event updates when new detail arrives
 
-A cycle can end in:
-1. NOOP
-2. UPDATE
-3. CREATE
-4. MAINTENANCE
+### Signals
+- X posts (verified real tweet IDs only)
+- official statements
+- article-based signals when justified
+- analyst notes only when synthesis adds real value
+- signal verification via /verify/search
+- signal linkage to events and actors
 
----
+### Map layer
+- strike arcs, missile tracks, targets, assets, threat zones, heat points
+- map features linked to source events via sourceEventId
+- coordinates grounded enough to be truthful
 
-## 5. The wake-cycle sequence
+### Story layer
+- map stories for coherent spatial narratives
+- story timeline events
+- story-event linkage (primaryEventId, sourceEventIds)
+- highlight references integrity
 
-1. Read /instructions
-2. Read /workspace
-3. Refresh conflict-local day/time
-4. Scan for materially new developments
-5. Classify candidates as create / update / ignore / maintenance
-6. If nothing materially new happened, do nothing
-7. If writing, draft scripts first
-8. Execute safely
-9. Verify user-facing state
+### Integrity
+- broken story references
+- invalid map actor/priority values
+- orphaned signal event refs
+- unlinked BREAKING signals
+- duplicate-risk review
 
----
-
-## 6. New event criteria
-
-Create a new event only if it is:
-- materially new relative to the DB,
-- significant enough to improve the war picture,
-- useful to the user-facing product.
-
-Good reasons:
-- new strike, salvo, target, or location
-- new actor entering directly
-- formal decision, vote, policy, deployment
-- major casualty milestone
-- major economic or diplomatic threshold
-
-Weak reasons:
-- recap coverage
-- commentary without a new fact
-- restatement of a known event
-- quota filling
+Empty planes on a live conflict day are a product failure, not a "nice to have."
 
 ---
 
-## 7. Update vs create vs ignore
+## 3. Key reminders
 
-### Update existing event if:
-- new detail belongs to the same strike/incident,
-- casualty toll changes for the same event,
-- confirmation or denial lands for the same event,
-- attribution/target detail improves without creating a new incident.
+These are the rules the agent most commonly violates. They are reinforced here deliberately:
 
-### Create new event if:
-- distinct new wave,
-- distinct new location,
-- distinct new actor action,
-- distinct new official decision,
-- distinct new consequence with its own timeline value.
-
-### Ignore if:
-- it adds no materially new fact,
-- it is narrative noise,
-- it belongs in signals only,
-- it does not improve the product.
+1. **Bundle enrichment with events.** When creating an event, create the map feature, actor responses, sources, and signals IN THE SAME SCRIPT. A bare event is not a finished product. Do not defer enrichment to "later."
+2. **NOOP only when scanning confirms dashboard complete AND nothing new.** NOOP is the outcome of a thorough scan, not the starting assumption. True NOOP should be rare during an active conflict.
+3. **Day snapshot must be fully filled.** Brief, keyFacts, casualties, economicImpact (chips + narrative), and scenarios must all be populated and updated when material changes occur. Empty fields on a live conflict day are a product failure.
+4. **Never fabricate tweet IDs, coordinates, sources, or data.** Use POST /verify/search to find real tweet IDs before creating XPOST signals.
 
 ---
 
-## 8. Day and time assignment
+## 4. Severity-based completion requirements
 
-All event, story, and map assignment must use ${ctx.timezone}.
+### CRITICAL and HIGH events
+- Sources: required (at least one inline or via POST /events/{id}/sources)
+- Actor responses: expected for all involved actors
+- Map evaluation: mandatory — create map feature if geography is grounded
+- Signal search: mandatory — find and link real X/statement signals
+- Story evaluation: assess if this event joins a story-worthy cluster
 
-Never assign day by:
-- UTC midnight alone,
-- article publication date alone,
-- source-local shorthand alone.
-
-Procedure:
-1. determine best available event time,
-2. convert to conflict-local time,
-3. assign to the conflict-local day.
-
-At the very start of a new day, only bootstrap foundational objects:
-- day snapshot
-- actor snapshots
-
-Do not fabricate the day early.
+### STANDARD events
+- Sources: required
+- Actor responses: create when genuinely relevant, not as filler
+- Map/signal/story: only when product value is real
 
 ---
 
-## 9. Story doctrine
+## 5. New event criteria + update vs create
 
-A story is a map-centered narrative product.
+Create a new event only if it is materially new, significant, and useful to the product.
 
-A valid story must:
-- be tied to real map geography,
-- explain one coherent operational thread,
-- be anchored to real map features,
-- cover a focused event window,
-- use objective, non-clickbait language.
+### Create when:
+${CREATE_EVENT_WHEN.map(r => `- ${r}`).join('\n')}
 
-Do not create stories for:
-- ${STORY_FORBIDDEN_THEMES.join(',\n- ')}.
+### Update existing event when:
+${UPDATE_EVENT_WHEN.map(r => `- ${r}`).join('\n')}
 
-Story titles must be concrete and objective.
+### Ignore when:
+${IGNORE_WHEN.map(r => `- ${r}`).join('\n')}
 
----
-
-## 10. Map doctrine
-
-Map features are for geographic and operational reality.
-
-Good map candidates:
-- strikes
-- missile tracks
-- drone routes
-- naval actions
-- bases, HQs, ports, refineries, launch sites, command centers
-- operational zones
-
-Do not map:
-- ${MAP_FORBIDDEN_THEMES.join(',\n- ')}.
-
-Coordinates must be grounded enough to be truthful.
+If you cannot explain in one sentence why something is a new event instead of an update, compare it against recent events before writing.
 
 ---
 
-## 11. Signals / X posts doctrine
+## 6. Day and time assignment
 
-Signals capture source-facing and actor-facing context.
+All day assignment uses ${ctx.timezone}, not raw UTC or article publication dates.
+At the very start of a new conflict day, bootstrap only: day snapshot + actor snapshots. Do not fabricate the day early.
+
+---
+
+## 7. Signals / X posts
 
 Order of preference:
-1. verified real X posts
-2. official statements
-3. news article / press release / analysis fallback
+1. Verified real X posts (use POST /verify/search to find real tweet IDs)
+2. Official statements
+3. News article / press release / analysis fallback
 4. Pharos analyst note only when synthesis adds real value
 
-Never fabricate tweet IDs.
-Link signals to the best-fit actor and event when it is genuinely justified.
+Link signals to the best-fit actor and event when genuinely justified.
 
 ---
 
-## 12. Actor snapshots, actions, responses
-
-Actor snapshots are daily state products.  
-Actor actions are meaningful actor moves during the day.  
-Actor responses should be attached to events where they improve user understanding.
-
-Do not create filler responses or filler actions just to satisfy counts.
-
----
-
-## 13. Day snapshot / brief / outlook doctrine
-
-Update the day snapshot when:
-- escalation changed,
-- casualties changed materially,
-- economic picture changed materially,
-- key facts changed,
-- scenarios/outlooks changed,
-- the brief is outdated.
-
-The brief must be analytical, not shallow.
-Scenarios should be present once the day has enough shape to forecast.
-
----
-
-## 14. Safe patching
-
-For complex objects:
-1. read current object,
-2. compare current vs intended change,
-3. merge carefully,
-4. write patch,
-5. verify resulting state.
-
-Never rewrite casualties, economic chips, or scenarios from memory alone.
-
----
-
-## 15. Render-side verification
-
-Admin write success is not enough.
-
-Before claiming success, verify:
-- workspace reflects the change,
-- consumer reflects the change,
-- or the mismatch is understood as a product/API issue.
-
----
-
-## 16. Product bug vs data bug triage
+## 8. Product bug vs data bug triage
 
 - Admin wrong + consumer wrong = data/write issue
 - Admin right + consumer wrong = API/serialization issue
@@ -637,21 +640,7 @@ Do not mutate data to compensate for an unproven frontend bug.
 
 ---
 
-## 17. Anti-patterns
-
-Avoid:
-- quota chasing,
-- story inflation,
-- false novelty,
-- overprecise fake mapping,
-- unsafe patching,
-- overconfident completion claims,
-- mode slippage after restart,
-- continuing from memory alone after interruption.
-
----
-
-## 18. Decision trees
+## 9. Decision trees
 
 ### Should I create a new event?
 Did something materially new happen?
@@ -659,7 +648,7 @@ Did something materially new happen?
 - yes -> is it already represented as the same incident?
   - yes -> patch existing
   - no -> is it significant enough to improve the product now?
-    - yes -> create
+    - yes -> create WITH full enrichment (sources, responses, map, signals)
     - no -> no action or signal only
 
 ### Should I create a map feature?
@@ -667,7 +656,7 @@ Does geography materially help the user understand this?
 - no -> do not map
 - yes -> is location/route grounded enough?
   - no -> wait
-  - yes -> create correct feature type
+  - yes -> create correct feature type, link via sourceEventId
 
 ### Should I create a story?
 Is there a spatial narrative, not just an interesting fact?
@@ -676,32 +665,23 @@ Is there a spatial narrative, not just an interesting fact?
   - no -> build map first or skip
   - yes -> create one objective, focused story
 
-### Should I do nothing?
-If no truly new, significant, non-duplicate, product-improving change exists:
-- do nothing
+### Should I fill completeness gaps?
+Are there empty day snapshot fields, missing responses, missing sources, or missing map features?
+- yes -> fill them. This is real work, not optional maintenance.
+- no -> proceed to NOOP if nothing new happened either.
+
+### Should I NOOP?
+- Are there new real-world developments? -> no NOOP, ingest them
+- Are there dashboard completeness gaps? -> no NOOP, fill them
+- Are there P1/P2 workspace todos? -> no NOOP, address them
+- None of the above? -> NOOP is correct
 
 ---
 
-## 19. Operational endpoint rules
+## 10. Runtime
 
-This system uses:
-- /instructions for the full doctrine
-- /workspace for live tasking
-- scripts only for writes
-- production only
-
-Always prefer enforcement/dry-run before creates when supported.
-
----
-
-## 20. Runtime policy summary
-
-- cadence: ${PHAROS_RUNTIME_POLICY.cadenceMinutes} minutes
-- default action: ${PHAROS_RUNTIME_POLICY.defaultAction}
-- no-op allowed: ${String(PHAROS_RUNTIME_POLICY.noOpAllowed)}
-- prefer update over create: ${String(PHAROS_RUNTIME_POLICY.preferUpdateOverCreate)}
-- scripts only: ${String(PHAROS_RUNTIME_POLICY.scriptsOnly)}
-- production only: ${String(PHAROS_RUNTIME_POLICY.prodOnly)}
+- Cadence: ${PHAROS_RUNTIME_POLICY.cadenceMinutes} minutes
+- NOOP condition: ${PHAROS_RUNTIME_POLICY.noOpCondition}
 
 End of manual.
 `;

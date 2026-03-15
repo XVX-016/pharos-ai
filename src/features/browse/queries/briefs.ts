@@ -4,7 +4,7 @@ import { publicConflictId } from '@/shared/lib/env';
 import { fmtDate } from '@/shared/lib/format';
 import { prisma } from '@/server/lib/db';
 
-import { PAGE_SIZE } from './events';
+import { PAGE_SIZE } from './page-size';
 
 const CONFLICT_ID = publicConflictId;
 
@@ -53,8 +53,23 @@ export const getBrief = cache(async (day: string) => {
 
   if (!row) return null;
 
+  const previousSnapshot = row.casualties.length === 0
+    ? await prisma.conflictDaySnapshot.findFirst({
+      where: {
+        conflictId: CONFLICT_ID,
+        day: { lt: date },
+        casualties: { some: {} },
+      },
+      orderBy: { day: 'desc' },
+      select: {
+        casualties: true,
+      },
+    })
+    : null;
+
   return {
     ...row,
+    casualties: row.casualties.length > 0 ? row.casualties : (previousSnapshot?.casualties ?? []),
     day: fmtDate(row.day.toISOString()),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
